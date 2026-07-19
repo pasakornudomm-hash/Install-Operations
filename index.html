@@ -572,6 +572,42 @@
       .weekday { display: none; }
     }
   </style>
+
+<script>
+/* GitHub Pages bridge for Google Apps Script */
+(function () {
+  if (window.google && google.script && google.script.run) return;
+  function createRunner() {
+    let onSuccess = function () {};
+    let onFailure = function () {};
+    const runner = new Proxy({}, {
+      get: function (_, method) {
+        if (method === "withSuccessHandler") return function (handler) { onSuccess = typeof handler === "function" ? handler : onSuccess; return runner; };
+        if (method === "withFailureHandler") return function (handler) { onFailure = typeof handler === "function" ? handler : onFailure; return runner; };
+        return function () {
+          const args = Array.prototype.slice.call(arguments);
+          fetch("https://script.google.com/macros/s/AKfycbzahp6g2Fkbet8ivCUVNIiVBgyJgnMA1jHrzpSpqgJ9UGlMeTfmkXubCOP22uMt257T/exec", {
+            method: "POST", redirect: "follow",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: String(method), args: args })
+          })
+            .then(function (response) { return response.text().then(function (text) {
+              let body; try { body = JSON.parse(text); } catch (_) { throw new Error("Apps Script ตอบกลับไม่ใช่ JSON"); }
+              if (!response.ok || !body.ok) throw new Error(body.error || "เรียกข้อมูลจาก Apps Script ไม่สำเร็จ");
+              return body.data;
+            }); })
+            .then(onSuccess)
+            .catch(function (error) { onFailure({ message: error && error.message ? error.message : String(error) }); });
+        };
+      }
+    });
+    return runner;
+  }
+  window.google = window.google || {};
+  window.google.script = window.google.script || {};
+  Object.defineProperty(window.google.script, "run", { configurable: true, get: createRunner });
+}());
+</script>
 </head>
 <body>
   <div class="app">
