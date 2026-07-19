@@ -1,0 +1,1881 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyCenter Install Dashboard</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    :root {
+      --brand: #e60012;
+      --brand-dark: #9f0010;
+      --nav: #15203a;
+      --nav-soft: #223154;
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --green: #c9f7df;
+      --green-line: #30b46c;
+      --violet: #e7ddff;
+      --violet-line: #7c5cff;
+      --yellow: #fff0bd;
+      --yellow-line: #f59e0b;
+      --red-soft: #fff1f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Noto Sans Thai", "Segoe UI", Tahoma, sans-serif;
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px 1fr;
+    }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      color: #fff;
+      background: linear-gradient(180deg, var(--nav), #0f172a);
+      padding: 18px 14px;
+      box-shadow: 12px 0 30px rgba(15, 23, 42, .16);
+      z-index: 3;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 10px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, .12);
+    }
+    .mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--brand);
+      font-weight: 900;
+      font-size: 18px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+    .brand p {
+      margin: 2px 0 0;
+      color: #cbd5e1;
+      font-size: 12px;
+    }
+    .nav {
+      display: grid;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .nav button {
+      width: 100%;
+      border: 1px solid transparent;
+      color: #dbe7ff;
+      background: transparent;
+      border-radius: 8px;
+      padding: 12px 13px;
+      text-align: left;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .nav button.active {
+      color: #fff;
+      background: var(--nav-soft);
+      border-color: rgba(255, 255, 255, .12);
+      box-shadow: inset 4px 0 0 var(--brand);
+    }
+    .side-note {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08);
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .content { min-width: 0; }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(243, 246, 251, .92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 16px 22px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .title h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+    .title p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 380px;
+    }
+    .dropzone {
+      flex: 1;
+      min-height: 52px;
+      border: 2px dashed #f43f5e;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: grid;
+      align-content: center;
+      transition: .2s;
+    }
+    .dropzone.drag { background: var(--red-soft); transform: translateY(-1px); }
+    .dropzone strong { font-size: 13px; }
+    .dropzone span { color: var(--muted); font-size: 12px; }
+    button, .button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--brand);
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    button.secondary { background: #111827; }
+    main { padding: 18px 22px 36px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .grid { display: grid; gap: 14px; }
+    .kpis { grid-template-columns: repeat(5, minmax(140px, 1fr)); }
+    .two { grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, .05);
+    }
+    .panel-head {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-title { font-weight: 900; }
+    .panel-sub { color: var(--muted); font-size: 12px; }
+    .panel-body { padding: 16px; }
+    .kpi {
+      padding: 16px;
+      border-left: 5px solid var(--brand);
+    }
+    .kpi-label { color: var(--muted); font-size: 12px; }
+    .kpi-value { margin-top: 4px; font-size: 30px; font-weight: 950; }
+    .kpi-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .chart { height: 320px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f8fafc;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      font-weight: 900;
+    }
+    .table-wrap {
+      max-height: 500px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+      background: white;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 160px 160px 140px;
+      gap: 10px;
+      align-items: end;
+    }
+    .column-filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .calendar-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .month-title {
+      font-size: 20px;
+      font-weight: 950;
+    }
+    .month-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .month-controls button {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      background: #243b6b;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(92px, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+      background: #fff;
+    }
+    .weekday, .cal-day {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .weekday {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      color: #243b6b;
+      font-size: 12px;
+      font-weight: 900;
+      background: #f8fafc;
+    }
+    .weekday.sun, .weekday.sat { color: var(--brand); }
+    .cal-day {
+      min-height: 132px;
+      padding: 7px;
+      background: #fff;
+    }
+    .cal-day.other { background: #f8fafc; color: #94a3b8; }
+    .cal-day.today { background: #edf4ff; }
+    .cal-day.has-work {
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .15s;
+    }
+    .cal-day.has-work:hover {
+      box-shadow: inset 0 0 0 2px #2451c9;
+      transform: translateY(-1px);
+    }
+    .cal-day.selected {
+      box-shadow: inset 0 0 0 3px var(--brand);
+      background: #fff7f7;
+    }
+    .day-no {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+    }
+    .today .day-no { background: #2451c9; color: #fff; }
+    .day-items {
+      display: grid;
+      gap: 5px;
+      margin-top: 7px;
+    }
+    .event {
+      border-left: 3px solid var(--green-line);
+      background: var(--green);
+      border-radius: 5px;
+      padding: 6px 7px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .event.change {
+      border-left-color: var(--yellow-line);
+      background: var(--yellow);
+    }
+    .event.install {
+      border-left-color: var(--violet-line);
+      background: var(--violet);
+    }
+    .event strong {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .event span { display: block; color: #475569; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #eef2ff;
+      color: #243b6b;
+      font-weight: 900;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .location-summary {
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .location-summary-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .location-summary-title {
+      font-weight: 950;
+    }
+    .location-kpis {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .location-kpi {
+      border: 1px solid var(--line);
+      border-left: 4px solid #2451c9;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+    .location-kpi b {
+      display: block;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+    .location-kpi span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .location-tables {
+      padding: 12px 14px 14px;
+      align-items: start;
+    }
+    .location-box {
+      min-width: 0;
+    }
+    .location-box-title {
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .location-box .table-wrap {
+      max-height: 260px;
+    }
+    .review-note {
+      padding: 0 14px 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .review-note.warn { color: #b42318; }
+    .day-detail {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .day-detail-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+    .day-detail-title {
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .day-metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .day-metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+    .day-metric b {
+      display: block;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+    .day-metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .day-detail-body {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .day-detail-columns {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+    .day-detail-box {
+      min-width: 0;
+    }
+    .day-detail-box-title {
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .day-detail-box .table-wrap {
+      max-height: 300px;
+    }
+    .day-filter-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .day-filter-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-weight: 900;
+    }
+    .day-filter-head button {
+      padding: 8px 12px;
+    }
+    .day-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .day-filter-grid input {
+      min-width: 0;
+      background: #fff;
+    }
+    .day-filter-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .day-work-table {
+      max-height: 360px;
+    }
+    .day-empty {
+      padding: 18px 16px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .handler-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .handler-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+    }
+    .handler-name {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 950;
+      margin-bottom: 8px;
+    }
+    .handler-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+    .mini {
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 8px;
+    }
+    .mini b { display: block; font-size: 18px; }
+    .mini span { color: var(--muted); font-size: 11px; }
+    .muted { color: var(--muted); }
+    .status { min-height: 20px; color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .global-filters {
+      display: grid;
+      grid-template-columns: 180px 240px 120px minmax(220px, 1fr);
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .filter-note {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: relative; height: auto; }
+      .nav { grid-template-columns: repeat(4, 1fr); }
+      .topbar, .top-actions { align-items: stretch; flex-direction: column; min-width: 0; }
+      .global-filters { grid-template-columns: 1fr; }
+      .filter-note { text-align: left; }
+      .kpis, .two, .three, .filters, .column-filters { grid-template-columns: 1fr; }
+      .day-metrics, .day-detail-columns { grid-template-columns: 1fr; }
+      .day-filter-grid { grid-template-columns: 1fr; }
+      .calendar-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+      .weekday { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="mark">MC</div>
+        <div>
+          <h1>มายเซ็นเตอร์</h1>
+          <p>Install Operations</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="active" data-view="dashboard">แดชบอร์ดรวม</button>
+        <button data-view="calendar">ปฏิทินรายเดือน</button>
+        <button data-view="handlers">แดชบอร์ดรายชื่อ</button>
+        <button data-view="search">ค้นหาไฟล์</button>
+        <button data-view="history">ประวัตินำเข้า</button>
+      </nav>
+      <div class="side-note">
+        ตัด `Termination` อัตโนมัติ และนับเฉพาะงานที่เหลือ เช่น Installation / Change ตามวันที่นัดหมาย
+      </div>
+    </aside>
+
+    <div class="content">
+      <header>
+        <div class="topbar">
+          <div class="title">
+          <h2 id="pageTitle">แดชบอร์ดรวม</h2>
+            <p id="pageSub">สรุป Installation และ Change แยกตาม Handler ช่วงวันที่ และ Area ภาษาไทย</p>
+          </div>
+          <div class="top-actions">
+            <div id="dropzone" class="dropzone">
+              <strong>วางไฟล์ Excel/CSV เพื่อเพิ่มข้อมูล</strong>
+              <span>.xls, .xlsx, .csv เก็บต้นฉบับไว้ใน Google Drive</span>
+              <input id="fileInput" type="file" multiple accept=".xls,.xlsx,.csv" style="display:none">
+            </div>
+            <button id="pickBtn">เลือกไฟล์</button>
+          </div>
+        </div>
+        <div class="global-filters">
+          <input id="globalMonth" type="month">
+          <select id="globalTeam"><option value="">ทุกทีม</option></select>
+          <button id="applyGlobalFilters" class="secondary" type="button">ใช้ตัวกรอง</button>
+          <div id="globalFilterNote" class="filter-note">เลือกเดือนเพื่อดูข้อมูลทั้งแดชบอร์ด</div>
+        </div>
+        <div id="status" class="status"></div>
+      </header>
+
+      <main>
+        <section id="dashboard" class="view active">
+          <div class="grid kpis">
+            <div class="panel kpi"><div class="kpi-label">ยอดหลังตัด Termination</div><div id="kpiTotal" class="kpi-value">0</div><div class="kpi-note">ทุก Install Flag ที่ใช้งาน</div></div>
+            <div class="panel kpi"><div class="kpi-label">Installation</div><div id="kpiInstallation" class="kpi-value">0</div><div class="kpi-note">งานติดตั้ง</div></div>
+            <div class="panel kpi"><div class="kpi-label">Change</div><div id="kpiChange" class="kpi-value">0</div><div class="kpi-note">Install Flag Change</div></div>
+            <div class="panel kpi"><div class="kpi-label">Handler</div><div id="kpiHandlers" class="kpi-value">0</div><div class="kpi-note">รายชื่อที่มีงาน</div></div>
+            <div class="panel kpi"><div class="kpi-label">Area ไทย</div><div id="kpiSubDistricts" class="kpi-value">0</div><div class="kpi-note">พื้นที่ปฏิบัติงาน</div></div>
+          </div>
+
+          <div class="grid two" style="margin-top:14px">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">ยอดรายวัน</div><div class="panel-sub">นับจำนวน Install Flag ที่เหลือหลังตัด Termination</div></div></div>
+              <div id="dailyChart" class="chart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">สัดส่วน Install Flag</div><div class="panel-sub">Installation และ Change เป็นคนละประเภทงาน</div></div></div>
+              <div id="flagChart" class="chart"></div>
+            </div>
+          </div>
+
+          <div class="grid two" style="margin-top:14px">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Top Handler</div><div class="panel-sub">เรียงตามจำนวนงาน</div></div></div>
+              <div id="handlerChart" class="chart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">วิเคราะห์พื้นที่ละเอียด</div><div class="panel-sub">Area ภาษาไทย / จังหวัด / อำเภอ / ตำบล</div></div></div>
+              <div class="panel-body table-wrap"><table id="areaTable"></table></div>
+            </div>
+          </div>
+
+          <div class="grid two" style="margin-top:14px">
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">Ranking ทีมช่าง</div><div class="panel-sub">ทีมที่ทำงานเยอะที่สุด แยก Installation / Change</div></div></div>
+              <div id="teamChart" class="chart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><div class="panel-title">ตาราง Ranking ทีมช่าง</div><div class="panel-sub">เรียงจากยอดรวมมากไปน้อย</div></div></div>
+              <div class="panel-body table-wrap"><table id="teamTable"></table></div>
+            </div>
+          </div>
+
+          <div class="grid three" style="margin-top:14px">
+            <div class="panel"><div class="panel-body"><b>Handler งานสูงสุด</b><div id="insightHandler" class="kpi-value">-</div><div class="muted" id="insightHandlerNote"></div></div></div>
+            <div class="panel"><div class="panel-body"><b>Area ไทยงานสูงสุด</b><div id="insightDistrict" class="kpi-value">-</div><div class="muted" id="insightDistrictNote"></div></div></div>
+            <div class="panel"><div class="panel-body"><b>ตำบลงานสูงสุด</b><div id="insightSubDistrict" class="kpi-value">-</div><div class="muted" id="insightSubDistrictNote"></div></div></div>
+          </div>
+        </section>
+
+        <section id="calendar" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">ปฏิทินยอดงานรายเดือน</div>
+                <div class="panel-sub">แสดงจำนวนเฉพาะวันที่มี Install Flag และแสดง Change เมื่อมีจำนวนมากกว่า 0</div>
+              </div>
+              <div class="month-controls">
+                <button id="prevMonth" title="เดือนก่อน">‹</button>
+                <button id="nextMonth" title="เดือนถัดไป">›</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="calendar-toolbar">
+                <div id="monthTitle" class="month-title"></div>
+                <span id="monthSummary" class="pill"></span>
+              </div>
+              <div class="grid three" style="margin-bottom:12px">
+                <div class="panel kpi"><div class="kpi-label">TOTAL เดือนนี้</div><div id="monthTotal" class="kpi-value">0</div><div class="kpi-note">Installation + Change</div></div>
+                <div class="panel kpi"><div class="kpi-label">Installation เดือนนี้</div><div id="monthInstallation" class="kpi-value">0</div><div class="kpi-note">ยอดติดตั้งรายเดือน</div></div>
+                <div class="panel kpi"><div class="kpi-label">Change เดือนนี้</div><div id="monthChange" class="kpi-value">0</div><div class="kpi-note">ยอด Change รายเดือน</div></div>
+              </div>
+              <div class="location-summary">
+                <div class="location-summary-head">
+                  <div>
+                    <div class="location-summary-title">สรุปพื้นที่จากคอลัมน์ R</div>
+                    <div id="monthLocationSource" class="panel-sub">Column R</div>
+                  </div>
+                  <span id="monthLocationStatus" class="pill"></span>
+                </div>
+                <div class="grid three location-kpis">
+                  <div class="location-kpi"><span>ตำบลที่นับได้</span><b id="monthSubDistrictTotal">0</b><span id="monthSubDistrictUnique">ไม่ซ้ำ 0 ตำบล</span></div>
+                  <div class="location-kpi"><span>อำเภอที่นับได้</span><b id="monthDistrictTotal">0</b><span id="monthDistrictUnique">ไม่ซ้ำ 0 อำเภอ</span></div>
+                  <div class="location-kpi"><span>จังหวัดที่นับได้</span><b id="monthProvinceTotal">0</b><span id="monthProvinceUnique">ไม่ซ้ำ 0 จังหวัด</span></div>
+                </div>
+                <div id="monthLocationReviewNote" class="review-note"></div>
+                <div class="grid three location-tables">
+                  <div class="location-box">
+                    <div class="location-box-title">ตำบล แยก Installation / Change</div>
+                    <div class="table-wrap"><table id="monthSubDistrictTable"></table></div>
+                  </div>
+                  <div class="location-box">
+                    <div class="location-box-title">อำเภอ แยก Installation / Change</div>
+                    <div class="table-wrap"><table id="monthDistrictTable"></table></div>
+                  </div>
+                  <div class="location-box">
+                    <div class="location-box-title">จังหวัด แยก Installation / Change</div>
+                    <div class="table-wrap"><table id="monthProvinceTable"></table></div>
+                  </div>
+                </div>
+                <div class="table-wrap" style="margin:0 14px 14px"><table id="monthLocationReviewTable"></table></div>
+              </div>
+              <div id="calendarGrid" class="calendar-grid"></div>
+              <div id="dayDetailPanel" class="day-detail"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="handlers" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">แดชบอร์ดของแต่ละชื่อ</div>
+                <div class="panel-sub">ดูจำนวนงาน Installation/Change, Area ภาษาไทย, วันที่ และพื้นที่ต่อ Handler</div>
+              </div>
+              <div style="display:grid;grid-template-columns:170px 84px 260px;gap:10px;max-width:540px;width:100%">
+                <select id="handlerTeamFilter"><option value="">ทุกทีม</option></select>
+                <button id="handlerTeamApply" class="secondary" type="button">ดูทีม</button>
+                <input id="handlerFilter" placeholder="ค้นหาชื่อ Handler">
+              </div>
+            </div>
+            <div class="panel-body">
+              <div id="handlerCards" class="handler-cards"></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <div class="panel-head"><div class="panel-title">รายละเอียด Handler x พื้นที่ x วันที่</div></div>
+            <div class="panel-body table-wrap"><table id="handlerLocationTable"></table></div>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">แยกทีมช่างของแต่ละชื่อ</div>
+                <div class="panel-sub">ดูว่า Handler อยู่ทีมไหน เช่น WW-ER-0004_Team1 / WW-ER-0004_Team2 และทำไปกี่งาน</div>
+              </div>
+            </div>
+            <div class="panel-body table-wrap"><table id="handlerTeamTable"></table></div>
+          </div>
+        </section>
+
+        <section id="search" class="view">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">ค้นหาไฟล์และกรองทุกคอลัมน์</div><div class="panel-sub">ค้นหาจากข้อมูลสะสมทั้งหมดใน RawData</div></div></div>
+            <div class="panel-body">
+              <div class="filters">
+                <input id="q" placeholder="ค้นหาทุกคอลัมน์ เช่น ชื่อ, จังหวัด, เลข WO">
+                <input id="fromDate" type="date">
+                <input id="toDate" type="date">
+                <button id="searchBtn">ค้นหา</button>
+              </div>
+              <div id="columnFilters" class="column-filters"></div>
+              <p id="searchCount" class="muted"></p>
+              <div class="table-wrap"><table id="resultTable"></table></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="history" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">ประวัติการนำเข้าไฟล์</div><div class="panel-sub">ดูไฟล์ที่เพิ่มเข้ามา จำนวนแถวที่นำเข้า และจำนวนที่ตัดออก</div></div>
+              <button id="refreshBtn" class="secondary">Refresh</button>
+            </div>
+            <div class="panel-body table-wrap"><table id="historyTable"></table></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      columns: [],
+      dashboard: null,
+      history: [],
+      currentMonth: null,
+      selectedDate: '',
+      dayWorkFilters: {},
+      allRows: [],
+      allTeams: [],
+      applyingFilters: false,
+      chartsReady: false
+    };
+    if (window.google && google.charts) {
+      google.charts.load('current', { packages: ['corechart', 'bar'] });
+      google.charts.setOnLoadCallback(() => {
+        state.chartsReady = true;
+        drawDashboardCharts();
+      });
+    }
+    const preferredFilters = ['Handler', 'Install Flag', 'Team', 'Area', 'Province', 'District', 'Sub-District', 'Operation Status', '_Import File'];
+    const dayWorkFilterFields = [
+      { key: 'team', label: 'ทีมช่าง' },
+      { key: 'handler', label: 'Handler' },
+      { key: 'flag', label: 'ประเภทงาน' },
+      { key: 'subDistrict', label: 'ตำบล' },
+      { key: 'district', label: 'อำเภอ' },
+      { key: 'province', label: 'จังหวัด' },
+      { key: 'workOrder', label: 'WO' }
+    ];
+    const pageText = {
+      dashboard: ['แดชบอร์ดรวม', 'วิเคราะห์ Installation และ Change แยกตามชื่อ วันที่ และ Area ไทย'],
+      calendar: ['ปฏิทินยอดงานรายเดือน', 'ดูยอดรายวันในรูปแบบปฏิทิน พร้อมจำนวน Change เฉพาะวันที่มีงาน'],
+      handlers: ['แดชบอร์ดของแต่ละชื่อ', 'เจาะลึก Handler ว่าทำงาน Area ไหน วันที่เท่าไหร่'],
+      search: ['ค้นหาไฟล์', 'ค้นหาและกรองข้อมูลได้ทุกคอลัมน์'],
+      history: ['ประวัตินำเข้า', 'ตรวจสอบไฟล์ที่เพิ่มเข้ามาและแถวที่ถูกตัดออก']
+    };
+
+    document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
+    document.getElementById('pickBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', e => uploadFiles(e.target.files));
+    document.getElementById('searchBtn').addEventListener('click', runSearch);
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('prevMonth').addEventListener('click', () => moveMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => moveMonth(1));
+    document.getElementById('handlerFilter').addEventListener('input', renderHandlers);
+    document.getElementById('handlerTeamFilter').addEventListener('change', renderHandlers);
+    document.getElementById('handlerTeamApply').addEventListener('click', renderHandlers);
+    document.getElementById('applyGlobalFilters').addEventListener('click', () => applyGlobalFilters(true));
+    document.getElementById('globalMonth').addEventListener('change', () => applyGlobalFilters(true));
+    document.getElementById('globalTeam').addEventListener('change', () => applyGlobalFilters(true));
+
+    const dropzone = document.getElementById('dropzone');
+    ['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+      e.preventDefault(); dropzone.classList.add('drag');
+    }));
+    ['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, e => {
+      e.preventDefault(); dropzone.classList.remove('drag');
+    }));
+    dropzone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
+
+    function switchView(view) {
+      document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === view));
+      document.getElementById('pageTitle').textContent = pageText[view][0];
+      document.getElementById('pageSub').textContent = pageText[view][1];
+      if (view === 'dashboard') drawDashboard();
+      if (view === 'calendar') renderCalendar();
+      if (view === 'handlers') renderHandlers();
+    }
+
+    function setStatus(text) {
+      document.getElementById('status').textContent = text || '';
+    }
+
+    function loadData() {
+      setStatus('กำลังโหลดข้อมูล...');
+      if (!hasAppsScript()) {
+        const data = mockData();
+        state.dashboard = data.dashboard;
+        state.columns = data.columns;
+        state.history = data.history;
+        state.allRows = (data.dashboard || {}).sampleRows || [];
+        state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
+        if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
+        state.currentMonth = inferMonth();
+        afterDataLoaded();
+        setStatus('โหมดตัวอย่าง: เมื่อนำไปวางใน Apps Script จะใช้ข้อมูลจาก Google Sheet จริง');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(data => {
+          state.dashboard = data.dashboard;
+          state.columns = data.columns || [];
+          state.history = data.history || [];
+          state.allRows = (data.dashboard || {}).sampleRows || [];
+          state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
+          if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
+          state.currentMonth = inferMonth();
+          afterDataLoaded();
+          setStatus('');
+        })
+        .withFailureHandler(showError)
+        .getBootstrapData();
+    }
+
+    function afterDataLoaded() {
+      state.currentMonth = inferMonth();
+      syncGlobalFilterControls();
+      renderGlobalTeamOptions();
+      renderColumnFilters();
+      drawDashboard();
+      renderCalendar();
+      renderHandlers();
+      renderHistory();
+      renderSearchPreview();
+      updateGlobalFilterNote();
+    }
+
+    function syncGlobalFilterControls() {
+      const input = document.getElementById('globalMonth');
+      if (!input.value) {
+        const m = state.currentMonth || inferMonth();
+        input.value = m.getFullYear() + '-' + pad(m.getMonth() + 1);
+      }
+    }
+
+    function renderGlobalTeamOptions() {
+      const select = document.getElementById('globalTeam');
+      const current = select.value;
+      const teams = [...new Set(state.allTeams.filter(Boolean))].sort();
+      const html = '<option value="">ทุกทีม</option>' + teams.map(t => '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>').join('');
+      if (select.innerHTML !== html) {
+        select.innerHTML = html;
+        if (teams.includes(current)) select.value = current;
+      }
+    }
+
+    function getGlobalFilters() {
+      const month = document.getElementById('globalMonth').value;
+      const team = document.getElementById('globalTeam').value;
+      const filters = { query: '', fromDate: '', toDate: '', columnFilters: {} };
+      if (month) {
+        const parts = month.split('-').map(Number);
+        const start = new Date(parts[0], parts[1] - 1, 1);
+        const end = new Date(parts[0], parts[1], 0);
+        filters.fromDate = start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate());
+        filters.toDate = end.getFullYear() + '-' + pad(end.getMonth() + 1) + '-' + pad(end.getDate());
+      }
+      if (team) filters.columnFilters.Team = team;
+      return filters;
+    }
+
+    function updateGlobalFilterNote() {
+      const month = document.getElementById('globalMonth').value || '-';
+      const team = document.getElementById('globalTeam').value || 'ทุกทีม';
+      document.getElementById('globalFilterNote').textContent = 'กำลังดูเดือน ' + month + ' / ทีม ' + team;
+    }
+
+    function selectedMonthDate() {
+      const month = document.getElementById('globalMonth').value;
+      if (month) {
+        const parts = month.split('-').map(Number);
+        return new Date(parts[0], parts[1] - 1, 1);
+      }
+      return inferMonth();
+    }
+
+    function applyGlobalFilters(showStatus) {
+      if (state.applyingFilters) return;
+      state.applyingFilters = true;
+      const filters = getGlobalFilters();
+      updateGlobalFilterNote();
+
+      if (!hasAppsScript()) {
+        const rows = filterRowsLocally(state.allRows || [], filters);
+        state.dashboard = summarizeMock(rows);
+        state.currentMonth = selectedMonthDate();
+        drawDashboard();
+        renderCalendar();
+        renderHandlers();
+        renderSearchPreview();
+        state.applyingFilters = false;
+        return;
+      }
+
+      if (showStatus) setStatus('กำลังกรองข้อมูลตามเดือนและทีม...');
+      google.script.run
+        .withSuccessHandler(res => {
+          state.dashboard = res.dashboard;
+          state.currentMonth = selectedMonthDate();
+          if ((res.allTeams || []).length && !filters.columnFilters.Team) {
+            state.allTeams = res.allTeams;
+            renderGlobalTeamOptions();
+          }
+          drawDashboard();
+          renderCalendar();
+          renderHandlers();
+          renderSearchResult(res);
+          setStatus('');
+          state.applyingFilters = false;
+        })
+        .withFailureHandler(err => {
+          state.applyingFilters = false;
+          showError(err);
+        })
+        .searchRecords(filters);
+    }
+
+    function filterRowsLocally(rows, filters) {
+      return rows.filter(row => {
+        const date = String(row['Appointment Date'] || '').slice(0, 10);
+        if (filters.fromDate && date < filters.fromDate) return false;
+        if (filters.toDate && date > filters.toDate) return false;
+        return Object.keys(filters.columnFilters || {}).every(col => {
+          const val = String(filters.columnFilters[col] || '').toLowerCase();
+          return !val || String(row[col] || '').toLowerCase().includes(val);
+        });
+      });
+    }
+
+    function renderSearchPreview() {
+      const dashboard = state.dashboard || {};
+      const rows = dashboard.sampleRows || [];
+      const total = dashboard.total || rows.length;
+      setText('searchCount', 'ตัวอย่าง ' + fmt(rows.length) + ' จาก ' + fmt(total) + ' รายการ กดค้นหาเมื่อต้องการค้นจาก RawData');
+      renderObjectTable('resultTable', state.columns || dashboard.columns || [], rows);
+    }
+
+    function renderSearchResult(res) {
+      const rows = (res && res.rows) || [];
+      const total = res && res.total !== undefined ? res.total : rows.length;
+      setText('searchCount', 'พบ ' + fmt(total) + ' รายการ แสดงสูงสุด ' + fmt(rows.length) + ' แถว');
+      renderObjectTable('resultTable', (res && res.columns) || state.columns || [], rows);
+    }
+
+    async function uploadFiles(files) {
+      if (!files || !files.length) return;
+      if (!hasAppsScript()) {
+        setStatus('หน้านี้เป็นไฟล์ตัวอย่าง local: การอัปโหลดจริงใช้เมื่อ Deploy เป็น Google Web App');
+        return;
+      }
+      for (const file of files) {
+        setStatus('กำลังอัปโหลด ' + file.name + ' ...');
+        const payload = await readFilePayload(file);
+        await new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(res => {
+              state.dashboard = res.dashboard;
+              state.columns = res.columns || state.columns;
+              state.history = res.history || [];
+              state.allTeams = res.allTeams || state.allTeams;
+              state.allRows = (res.dashboard || {}).sampleRows || [];
+              if (res.defaultMonth) document.getElementById('globalMonth').value = res.defaultMonth;
+              state.currentMonth = inferMonth();
+              afterDataLoaded();
+              setStatus('นำเข้า ' + res.fileName + ' สำเร็จ: เพิ่ม ' + res.result.importedRows + ' แถว, ตัด Termination ' + res.result.skippedTermination + ' แถว');
+              resolve();
+            })
+            .withFailureHandler(err => { showError(err); reject(err); })
+            .uploadFile(payload);
+        });
+      }
+    }
+
+    function readFilePayload(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          name: file.name,
+          mimeType: file.type || 'application/vnd.ms-excel',
+          data: String(reader.result).split(',')[1]
+        });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function drawDashboard() {
+      const d = state.dashboard || {};
+      const insight = d.detailedInsights || {};
+      document.getElementById('kpiTotal').textContent = fmt(insight.total || d.total || 0);
+      document.getElementById('kpiInstallation').textContent = fmt(insight.installation || flagCount('Installation'));
+      document.getElementById('kpiChange').textContent = fmt(insight.change || flagCount('Change'));
+      document.getElementById('kpiHandlers').textContent = fmt(insight.handlerCount || (d.byHandler || []).length);
+      document.getElementById('kpiSubDistricts').textContent = fmt(insight.areaCount || (d.byArea || []).length || insight.subDistrictCount || (d.bySubDistrict || []).length);
+      setInsight('insightHandler', 'insightHandlerNote', insight.topHandler);
+      setInsight('insightDistrict', 'insightDistrictNote', insight.topArea || insight.topDistrict);
+      setInsight('insightSubDistrict', 'insightSubDistrictNote', insight.topSubDistrict);
+      renderAreaTable(d);
+      renderTeamRanking(d);
+      drawDashboardCharts();
+    }
+
+    function drawDashboardCharts() {
+      if (!(window.google && google.visualization && state.chartsReady)) return;
+      const d = state.dashboard || {};
+      drawBar('dailyChart', 'วันที่', 'จำนวน', d.daily || []);
+      drawPie('flagChart', d.byFlag || []);
+      drawBar('handlerChart', 'Handler', 'จำนวน', d.byHandler || []);
+      drawStackedTeamChart('teamChart', d.byTeam || []);
+    }
+
+    function setInsight(valueId, noteId, item) {
+      document.getElementById(valueId).textContent = item && item.name ? item.name : '-';
+      document.getElementById(noteId).textContent = item && item.count ? fmt(item.count) + ' งาน' : '';
+    }
+
+    function drawBar(id, label, metric, rows) {
+      const table = new google.visualization.DataTable();
+      table.addColumn('string', label);
+      table.addColumn('number', metric);
+      rows.slice(0, 30).forEach(r => table.addRow([String(r.name), Number(r.count)]));
+      const chart = new google.visualization.ColumnChart(document.getElementById(id));
+      chart.draw(table, {
+        legend: { position: 'none' },
+        colors: ['#e60012'],
+        chartArea: { left: 56, top: 24, width: '82%', height: '68%' },
+        hAxis: { textStyle: { fontSize: 11 } },
+        vAxis: { minValue: 0, gridlines: { color: '#eef2f7' } }
+      });
+    }
+
+    function drawPie(id, rows) {
+      const table = new google.visualization.DataTable();
+      table.addColumn('string', 'Install Flag');
+      table.addColumn('number', 'จำนวน');
+      rows.forEach(r => table.addRow([String(r.name), Number(r.count)]));
+      const chart = new google.visualization.PieChart(document.getElementById(id));
+      chart.draw(table, {
+        pieHole: .55,
+        colors: ['#e60012', '#f59e0b', '#243b6b', '#10b981', '#64748b'],
+        chartArea: { left: 10, top: 16, width: '95%', height: '82%' },
+        legend: { position: 'right' }
+      });
+    }
+
+    function renderAreaTable(d) {
+      const rows = [];
+      (d.byArea || []).forEach(r => rows.push(['Area ภาษาไทย', r.name, r.count]));
+      (d.byProvince || []).forEach(r => rows.push(['จังหวัด', r.name, r.count]));
+      (d.byDistrict || []).forEach(r => rows.push(['อำเภอ', r.name, r.count]));
+      (d.bySubDistrict || []).forEach(r => rows.push(['ตำบล', r.name, r.count]));
+      renderTable('areaTable', ['ประเภท', 'พื้นที่', 'จำนวน'], rows);
+    }
+
+    function renderTeamRanking(d) {
+      const rows = (d.byTeam || []).map((t, i) => [
+        i + 1,
+        t.team,
+        t.total,
+        t.installation,
+        t.change,
+        t.handlerCount,
+        t.topHandlers,
+        t.topAreas
+      ]);
+      renderTable('teamTable', ['Rank', 'Team', 'Total', 'Installation', 'Change', 'จำนวน Handler', 'Handler หลัก', 'Area หลัก'], rows);
+    }
+
+    function drawStackedTeamChart(id, rows) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const table = new google.visualization.DataTable();
+      table.addColumn('string', 'Team');
+      table.addColumn('number', 'Installation');
+      table.addColumn('number', 'Change');
+      rows.slice(0, 12).forEach(r => table.addRow([String(r.team), Number(r.installation || 0), Number(r.change || 0)]));
+      const chart = new google.visualization.BarChart(el);
+      chart.draw(table, {
+        isStacked: true,
+        colors: ['#7c5cff', '#f59e0b'],
+        chartArea: { left: 120, top: 24, width: '70%', height: '72%' },
+        hAxis: { minValue: 0, gridlines: { color: '#eef2f7' } },
+        legend: { position: 'top' }
+      });
+    }
+
+    function inferMonth() {
+      const days = (state.dashboard && state.dashboard.calendarDays) || [];
+      const first = days[0] && days[0].date ? days[0].date : new Date().toISOString().slice(0, 10);
+      return new Date(first + 'T00:00:00');
+    }
+
+    function moveMonth(delta) {
+      if (!state.currentMonth) state.currentMonth = inferMonth();
+      state.currentMonth = new Date(state.currentMonth.getFullYear(), state.currentMonth.getMonth() + delta, 1);
+      document.getElementById('globalMonth').value = state.currentMonth.getFullYear() + '-' + pad(state.currentMonth.getMonth() + 1);
+      applyGlobalFilters(true);
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      if (!grid) return;
+      const d = state.dashboard || {};
+      const days = d.calendarDays || [];
+      if (!state.currentMonth) state.currentMonth = inferMonth();
+      const year = state.currentMonth.getFullYear();
+      const month = state.currentMonth.getMonth();
+      const monthKey = year + '-' + pad(month + 1);
+      const dayMap = {};
+      days.forEach(item => dayMap[item.date] = item);
+      const first = new Date(year, month, 1);
+      const start = new Date(year, month, 1 - first.getDay());
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const monthItems = days.filter(x => String(x.date).startsWith(monthKey));
+      const monthTotal = monthItems.reduce((s, x) => s + Number(x.total || 0), 0);
+      const monthInstallation = monthItems.reduce((s, x) => s + Number(x.installation || 0), 0);
+      const monthChange = monthItems.reduce((s, x) => s + Number(x.change || 0), 0);
+      if (!monthItems.some(x => x.date === state.selectedDate)) {
+        state.selectedDate = monthItems[0] && monthItems[0].date ? monthItems[0].date : '';
+        state.dayWorkFilters = {};
+      }
+
+      document.getElementById('monthTitle').textContent = first.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+      document.getElementById('monthSummary').textContent = 'รวม ' + fmt(monthTotal) + ' งาน' + (monthChange > 0 ? ' / Change ' + fmt(monthChange) : '');
+      document.getElementById('monthTotal').textContent = fmt(monthTotal);
+      document.getElementById('monthInstallation').textContent = fmt(monthInstallation);
+      document.getElementById('monthChange').textContent = fmt(monthChange);
+      renderMonthLocationSummary(d, monthKey);
+
+      const weekdays = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+      const cells = weekdays.map((w, i) => '<div class="weekday ' + (i === 0 ? 'sun' : i === 6 ? 'sat' : '') + '">' + w + '</div>');
+
+      for (let i = 0; i < 42; i++) {
+        const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        const key = date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+        const item = dayMap[key];
+        const classes = ['cal-day'];
+        if (date.getMonth() !== month) classes.push('other');
+        if (key === todayKey) classes.push('today');
+        if (item && Number(item.total) > 0) {
+          classes.push('has-work');
+          if (key === state.selectedDate) classes.push('selected');
+        }
+        let html = '<div class="' + classes.join(' ') + '"' + (item && Number(item.total) > 0 ? ' data-date="' + key + '" role="button" tabindex="0" title="คลิกดูรายละเอียดรายวัน"' : '') + '><span class="day-no">' + date.getDate() + '</span>';
+        if (item && Number(item.total) > 0) {
+          html += '<div class="day-items">';
+          html += '<div class="event"><strong><span>ยอดรวม</span><em>' + fmt(item.total) + '</em></strong><span>' + escapeHtml(item.areaText || '') + '</span></div>';
+          if (Number(item.installation) > 0) {
+            html += '<div class="event install"><strong><span>Installation</span><em>' + fmt(item.installation) + '</em></strong><span>' + escapeHtml(item.topHandlers || '') + '</span></div>';
+          }
+          if (Number(item.change) > 0) {
+            html += '<div class="event change"><strong><span>Change</span><em>' + fmt(item.change) + '</em></strong><span>Install Flag Change</span></div>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+        cells.push(html);
+      }
+      grid.innerHTML = cells.join('');
+      grid.querySelectorAll('.cal-day.has-work').forEach(cell => {
+        cell.addEventListener('click', () => selectCalendarDay(cell.dataset.date));
+        cell.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectCalendarDay(cell.dataset.date);
+          }
+        });
+      });
+      renderDayDetail(dayMap[state.selectedDate]);
+    }
+
+    function selectCalendarDay(dateKey) {
+      if (state.selectedDate !== dateKey) state.dayWorkFilters = {};
+      state.selectedDate = dateKey || '';
+      renderCalendar();
+      const panel = document.getElementById('dayDetailPanel');
+      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderDayDetail(item) {
+      const panel = document.getElementById('dayDetailPanel');
+      if (!panel) return;
+      if (!item || !Number(item.total || 0)) {
+        panel.innerHTML = '<div class="day-empty">คลิกวันที่ที่มีงานเพื่อดูรายละเอียดรายวัน</div>';
+        return;
+      }
+
+      panel.innerHTML = `
+        <div class="day-detail-head">
+          <div>
+            <div class="day-detail-title">${escapeHtml(formatThaiDate(item.date))}</div>
+            <div class="panel-sub">รายละเอียดพื้นที่และทีมช่างของวันเดียวกันจากข้อมูลที่กรองอยู่</div>
+          </div>
+          <span id="dayDetailCount" class="pill">${fmt(item.total)} งาน</span>
+        </div>
+        <div class="day-metrics">
+          <div class="day-metric"><span>งานรวม</span><b id="dayMetricTotal">0</b></div>
+          <div class="day-metric"><span>Installation</span><b id="dayMetricInstallation">0</b></div>
+          <div class="day-metric"><span>Change</span><b id="dayMetricChange">0</b></div>
+          <div class="day-metric"><span>ทีมช่าง</span><b id="dayMetricTeams">0</b></div>
+          <div class="day-metric"><span>ตำบล</span><b id="dayMetricSubDistricts">0</b></div>
+        </div>
+        <div class="day-detail-body">
+          <div class="day-detail-columns">
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">ตำบลในวันนี้</div>
+              <div class="table-wrap"><table id="daySubDistrictTable"></table></div>
+            </div>
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">อำเภอในวันนี้</div>
+              <div class="table-wrap"><table id="dayDistrictTable"></table></div>
+            </div>
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">ทีมช่างในวันนี้</div>
+              <div class="table-wrap"><table id="dayTeamTable"></table></div>
+            </div>
+          </div>
+          <div class="day-detail-columns">
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">จังหวัด</div>
+              <div class="table-wrap"><table id="dayProvinceTable"></table></div>
+            </div>
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">Handler</div>
+              <div class="table-wrap"><table id="dayHandlerTable"></table></div>
+            </div>
+            <div class="day-detail-box">
+              <div class="day-detail-box-title">ภาพรวม</div>
+              <div id="dayOverviewArea" class="muted">พื้นที่หลัก: -</div>
+              <div id="dayOverviewTeam" class="muted">ทีมหลัก: -</div>
+              <div id="dayOverviewHandler" class="muted">Handler หลัก: -</div>
+            </div>
+          </div>
+          <div>
+            <div class="day-detail-box-title">รายการงานรายวัน</div>
+            <div class="day-filter-panel">
+              <div class="day-filter-head">
+                <span>กรองรายการงานรายวัน</span>
+                <button id="dayFilterClear" class="secondary" type="button">ล้างตัวกรอง</button>
+              </div>
+              <div class="day-filter-grid">
+                ${dayWorkFilterFields.map(field => '<input data-day-filter="' + field.key + '" placeholder="กรอง ' + field.label + '">').join('')}
+              </div>
+              <div id="dayFilterNote" class="day-filter-note"></div>
+            </div>
+            <div class="table-wrap day-work-table"><table id="dayWorkTable"></table></div>
+          </div>
+        </div>
+      `;
+
+      panel.querySelectorAll('[data-day-filter]').forEach(input => {
+        input.value = state.dayWorkFilters[input.dataset.dayFilter] || '';
+        input.addEventListener('input', () => {
+          state.dayWorkFilters[input.dataset.dayFilter] = input.value;
+          renderFilteredDayDetail(item);
+        });
+      });
+      const clear = document.getElementById('dayFilterClear');
+      if (clear) {
+        clear.addEventListener('click', () => {
+          state.dayWorkFilters = {};
+          panel.querySelectorAll('[data-day-filter]').forEach(input => { input.value = ''; });
+          renderFilteredDayDetail(item);
+        });
+      }
+      renderFilteredDayDetail(item);
+    }
+
+    function renderFilteredDayDetail(item) {
+      const rows = item && item.rows ? item.rows : [];
+      const filteredRows = filterDayWorkRows(rows);
+      const installation = filteredRows.filter(r => String(r.flag || '').toLowerCase() === 'installation').length;
+      const change = filteredRows.filter(r => String(r.flag || '').toLowerCase() === 'change').length;
+      const subDistricts = groupDayRows_(filteredRows, 'subDistrict');
+      const districts = groupDayRows_(filteredRows, 'district');
+      const provinces = groupDayRows_(filteredRows, 'province');
+      const teams = groupDayRows_(filteredRows, 'team');
+      const handlers = groupDayRows_(filteredRows, 'handler');
+      const hasFilter = Object.keys(state.dayWorkFilters || {}).some(key => String(state.dayWorkFilters[key] || '').trim());
+
+      setText('dayDetailCount', fmt(filteredRows.length) + (hasFilter ? ' / ' + fmt(rows.length) : '') + ' งาน');
+      setText('dayMetricTotal', fmt(filteredRows.length));
+      setText('dayMetricInstallation', fmt(installation));
+      setText('dayMetricChange', fmt(change));
+      setText('dayMetricTeams', fmt(teams.length));
+      setText('dayMetricSubDistricts', fmt(subDistricts.length));
+      setText('dayFilterNote', hasFilter
+        ? 'แสดง ' + fmt(filteredRows.length) + ' จากทั้งหมด ' + fmt(rows.length) + ' งาน และสรุปด้านบนปรับตามผลกรองแล้ว'
+        : 'ยังไม่ได้กรอง แสดงงานทั้งหมดของวันที่เลือก');
+      setText('dayOverviewArea', 'พื้นที่หลัก: ' + (formatTopRows_(subDistricts, 5) || '-'));
+      setText('dayOverviewTeam', 'ทีมหลัก: ' + (formatTopRows_(teams, 5) || '-'));
+      setText('dayOverviewHandler', 'Handler หลัก: ' + (formatTopRows_(handlers, 5) || '-'));
+
+      renderTable('daySubDistrictTable', ['ตำบล', 'Installation', 'Change', 'รวม'], breakdownRows_(subDistricts));
+      renderTable('dayDistrictTable', ['อำเภอ', 'Installation', 'Change', 'รวม'], breakdownRows_(districts));
+      renderTable('dayTeamTable', ['ทีมช่าง', 'Installation', 'Change', 'รวม'], breakdownRows_(teams));
+      renderTable('dayProvinceTable', ['จังหวัด', 'Installation', 'Change', 'รวม'], breakdownRows_(provinces));
+      renderTable('dayHandlerTable', ['Handler', 'Installation', 'Change', 'รวม'], breakdownRows_(handlers));
+      renderTable('dayWorkTable', ['ทีมช่าง', 'Handler', 'ประเภท', 'ตำบล', 'อำเภอ', 'จังหวัด', 'WO'], filteredRows.map(r => [
+        r.team,
+        r.handler,
+        r.flag,
+        r.subDistrict,
+        r.district,
+        r.province,
+        r.workOrder
+      ]));
+    }
+
+    function filterDayWorkRows(rows) {
+      const filters = state.dayWorkFilters || {};
+      return (rows || []).filter(row => dayWorkFilterFields.every(field => {
+        const filter = String(filters[field.key] || '').trim().toLowerCase();
+        if (!filter) return true;
+        return String(row[field.key] || '').toLowerCase().includes(filter);
+      }));
+    }
+
+    function groupDayRows_(rows, key) {
+      const map = {};
+      (rows || []).forEach(row => {
+        const name = String(row[key] || '').trim() || '(blank)';
+        const flag = String(row.flag || '').trim().toLowerCase();
+        if (!map[name]) map[name] = { name, count: 0, installation: 0, change: 0 };
+        map[name].count++;
+        if (flag === 'installation') map[name].installation++;
+        if (flag === 'change') map[name].change++;
+      });
+      return Object.keys(map)
+        .map(name => map[name])
+        .sort((a, b) => b.count - a.count || String(a.name).localeCompare(String(b.name)));
+    }
+
+    function breakdownRows_(rows) {
+      return (rows || []).map(x => [x.name, x.installation || 0, x.change || 0, x.count || x.total || 0]);
+    }
+
+    function formatTopRows_(rows, limit) {
+      return (rows || []).slice(0, limit).map(x => x.name + ' (' + fmt(x.count) + ')').join(', ');
+    }
+
+    function formatThaiDate(dateKey) {
+      const date = new Date(String(dateKey || '') + 'T00:00:00');
+      if (isNaN(date.getTime())) return dateKey || '-';
+      return date.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function renderMonthLocationSummary(d, monthKey) {
+      const empty = {
+        total: 0,
+        withAddress: 0,
+        subDistrictTotal: 0,
+        districtTotal: 0,
+        provinceTotal: 0,
+        completeTotal: 0,
+        needReview: 0,
+        subDistrictUnique: 0,
+        districtUnique: 0,
+        provinceUnique: 0,
+        subDistricts: [],
+        districts: [],
+        provinces: [],
+        subDistrictBreakdown: [],
+        districtBreakdown: [],
+        provinceBreakdown: [],
+        byType: {
+          installation: { total: 0 },
+          change: { total: 0 }
+        },
+        reviewRows: []
+      };
+      const summary = ((d && d.monthlyLocations) || []).find(x => x.month === monthKey) || empty;
+      const source = d && d.columnRHeader ? d.columnRHeader : 'Column R';
+      const installationTotal = summary.byType && summary.byType.installation ? summary.byType.installation.total || 0 : 0;
+      const changeTotal = summary.byType && summary.byType.change ? summary.byType.change.total || 0 : 0;
+
+      setText('monthLocationSource', 'แหล่งข้อมูล: ' + source + ' / แยก Installation และ Change');
+      setText('monthLocationStatus', 'Installation ' + fmt(installationTotal) + ' / Change ' + fmt(changeTotal) + (summary.needReview > 0 ? ' / ตรวจสอบ ' + fmt(summary.needReview) : ''));
+      setText('monthSubDistrictTotal', fmt(summary.subDistrictTotal));
+      setText('monthDistrictTotal', fmt(summary.districtTotal));
+      setText('monthProvinceTotal', fmt(summary.provinceTotal));
+      setText('monthSubDistrictUnique', 'ไม่ซ้ำ ' + fmt(summary.subDistrictUnique) + ' ตำบล');
+      setText('monthDistrictUnique', 'ไม่ซ้ำ ' + fmt(summary.districtUnique) + ' อำเภอ');
+      setText('monthProvinceUnique', 'ไม่ซ้ำ ' + fmt(summary.provinceUnique) + ' จังหวัด');
+
+      const note = document.getElementById('monthLocationReviewNote');
+      if (note) {
+        note.className = 'review-note' + (summary.needReview > 0 ? ' warn' : '');
+        note.textContent = summary.needReview > 0
+          ? 'มีแถวที่แยกตำบล/อำเภอ/จังหวัดจากคอลัมน์ R ไม่ครบ ตารางด้านล่างยังแยก Installation/Change จากแถวที่อ่านพื้นที่ได้แล้ว'
+          : 'ทุกแถวที่มีงานในเดือนนี้แยกตำบล/อำเภอ/จังหวัดจากคอลัมน์ R ได้ครบ และแยก Installation/Change แล้ว';
+      }
+
+      renderLocationBreakdownTable('monthSubDistrictTable', 'ตำบล', summary.subDistrictBreakdown, summary.subDistricts);
+      renderLocationBreakdownTable('monthDistrictTable', 'อำเภอ', summary.districtBreakdown, summary.districts);
+      renderLocationBreakdownTable('monthProvinceTable', 'จังหวัด', summary.provinceBreakdown, summary.provinces);
+      renderTable('monthLocationReviewTable', ['วันที่', 'ประเภท', 'คอลัมน์ R', 'จับได้'], (summary.reviewRows || []).map(x => [x.date, x.flag || '-', x.address, x.found]));
+    }
+
+    function renderLocationBreakdownTable(id, label, breakdown, legacyRows) {
+      const rows = (breakdown && breakdown.length ? breakdown : (legacyRows || []).map(x => ({
+        name: x.name,
+        installation: 0,
+        change: 0,
+        total: x.count || 0
+      }))).map(x => [x.name, x.installation || 0, x.change || 0, x.total || 0]);
+      renderTable(id, [label, 'Installation', 'Change', 'รวม'], rows);
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function renderHandlers() {
+      const filter = document.getElementById('handlerFilter').value.trim().toLowerCase();
+      updateHandlerTeamFilterOptions();
+      const teamFilter = document.getElementById('handlerTeamFilter').value;
+      const stats = ((state.dashboard || {}).handlerStats || []).filter(h => {
+        const matchName = !filter || String(h.handler).toLowerCase().includes(filter);
+        const matchTeam = !teamFilter || parseTeamText(h.teamText || h.primaryTeam || '').some(t => t.name === teamFilter);
+        return matchName && matchTeam;
+      });
+      const wrap = document.getElementById('handlerCards');
+      wrap.innerHTML = stats.slice(0, 60).map(h => `
+        <div class="handler-card">
+          <div class="handler-name"><span>${escapeHtml(h.handler)}</span><span class="pill">${fmt(h.total)} งาน</span></div>
+          <div class="muted" style="margin-bottom:8px">ทีม: <b>${escapeHtml(displayTeamText(h, teamFilter))}</b></div>
+          <div class="handler-metrics">
+            <div class="mini"><b>${fmt(h.installation)}</b><span>Installation</span></div>
+            <div class="mini"><b>${fmt(h.change)}</b><span>Change</span></div>
+            <div class="mini"><b>${fmt(h.subDistrictCount)}</b><span>ตำบล</span></div>
+          </div>
+          <div class="muted">Area หลัก: ${escapeHtml(h.topAreas || h.topSubDistricts || '-')}</div>
+          <div class="muted">วันที่: ${escapeHtml(h.dates || '-')}</div>
+        </div>
+      `).join('') || '<div class="muted">ไม่พบข้อมูลรายชื่อ</div>';
+
+      const groups = (state.dashboard || {}).handlerLocations || [];
+      const rows = [];
+      groups.forEach(g => g.locations.forEach(loc => {
+        if (!filter || String(g.handler).toLowerCase().includes(filter)) rows.push([g.handler, loc.location, loc.count, loc.dates]);
+      }));
+      renderTable('handlerLocationTable', ['Handler', 'ตำบล / อำเภอ / จังหวัด', 'จำนวน', 'วันที่'], rows);
+      renderHandlerTeamTable(stats, teamFilter);
+    }
+
+    function updateHandlerTeamFilterOptions() {
+      const select = document.getElementById('handlerTeamFilter');
+      const current = select.value;
+      const teamSet = new Set();
+      ((state.dashboard || {}).handlerStats || []).forEach(h => {
+        parseTeamText(h.teamText || h.primaryTeam || '').forEach(t => teamSet.add(t.name));
+      });
+      const teams = [...teamSet].sort();
+      const html = '<option value="">ทุกทีม</option>' + teams.map(t => '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>').join('');
+      if (select.innerHTML !== html) {
+        select.innerHTML = html;
+        if (teams.includes(current)) select.value = current;
+      }
+    }
+
+    function renderHandlerTeamTable(stats, teamFilter) {
+      const rows = [];
+      stats.forEach(h => {
+        parseTeamText(h.teamText || h.primaryTeam || '').forEach(team => {
+          if (teamFilter && team.name !== teamFilter) return;
+          rows.push([
+            team.name,
+            h.handler,
+            team.count,
+            h.installation,
+            h.change,
+            h.total,
+            h.topAreas || h.topSubDistricts || ''
+          ]);
+        });
+      });
+      rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])) || Number(b[2]) - Number(a[2]) || String(a[1]).localeCompare(String(b[1])));
+      renderTable('handlerTeamTable', ['Team', 'Handler', 'งานในทีมนี้', 'Installation รวมของชื่อ', 'Change รวมของชื่อ', 'Total รวมของชื่อ', 'Area หลัก'], rows);
+    }
+
+    function displayTeamText(handler, teamFilter) {
+      const teams = parseTeamText(handler.teamText || handler.primaryTeam || '');
+      if (teamFilter) {
+        const found = teams.find(t => t.name === teamFilter);
+        return found ? found.name + (found.count !== '' ? ' (' + found.count + ')' : '') : '-';
+      }
+      return handler.teamText || handler.primaryTeam || '-';
+    }
+
+    function parseTeamText(text) {
+      return String(text || '').split(',').map(part => {
+        const raw = part.trim();
+        if (!raw) return null;
+        const m = raw.match(/^(.*)\s+\((\d+)\)$/);
+        return m ? { name: m[1], count: Number(m[2]) } : { name: raw, count: '' };
+      }).filter(Boolean);
+    }
+
+    function renderColumnFilters() {
+      const wrap = document.getElementById('columnFilters');
+      wrap.innerHTML = '';
+      preferredFilters.filter(c => state.columns.includes(c)).forEach(col => {
+        const input = document.createElement('input');
+        input.placeholder = 'กรอง ' + col;
+        input.dataset.column = col;
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+        wrap.appendChild(input);
+      });
+    }
+
+    function runSearch() {
+      const columnFilters = {};
+      document.querySelectorAll('#columnFilters input').forEach(input => {
+        if (input.value.trim()) columnFilters[input.dataset.column] = input.value.trim();
+      });
+      const filters = {
+        query: document.getElementById('q').value,
+        fromDate: document.getElementById('fromDate').value,
+        toDate: document.getElementById('toDate').value,
+        columnFilters
+      };
+      const globalFilters = getGlobalFilters();
+      filters.fromDate = filters.fromDate || globalFilters.fromDate;
+      filters.toDate = filters.toDate || globalFilters.toDate;
+      filters.columnFilters = Object.assign({}, globalFilters.columnFilters, filters.columnFilters);
+
+      if (!hasAppsScript()) {
+        const baseRows = filterRowsLocally(state.allRows || [], filters);
+        const rows = baseRows.filter(row => {
+          const q = filters.query.trim().toLowerCase();
+          return !q || Object.keys(row).some(k => String(row[k] || '').toLowerCase().includes(q));
+        });
+        document.getElementById('searchCount').textContent = 'พบ ' + fmt(rows.length) + ' รายการ แสดงตัวอย่าง';
+        renderObjectTable('resultTable', state.columns, rows);
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          renderSearchResult(res);
+          state.dashboard = res.dashboard;
+          state.columns = res.columns || state.columns;
+          drawDashboard();
+          state.currentMonth = selectedMonthDate();
+          renderCalendar();
+          renderHandlers();
+        })
+        .withFailureHandler(showError)
+        .searchRecords(filters);
+    }
+
+    function renderHistory() {
+      const rows = (state.history || []).map(h => [
+        h.importAt,
+        h.sourceUrl ? '<a href="' + h.sourceUrl + '" target="_blank">' + escapeHtml(h.fileName) + '</a>' : h.fileName,
+        h.totalRows,
+        h.importedRows,
+        h.skippedTermination,
+        h.duplicateRows,
+        h.status
+      ]);
+      renderTable('historyTable', ['เวลา', 'ไฟล์', 'แถวทั้งหมด', 'นำเข้า', 'ตัด Termination', 'ซ้ำ', 'สถานะ'], rows, true);
+    }
+
+    function renderObjectTable(id, columns, rows) {
+      const showCols = columns.filter(c => !String(c).startsWith('_')).slice(0, 55);
+      renderTable(id, showCols, rows.map(r => showCols.map(c => r[c])));
+    }
+
+    function renderTable(id, headers, rows, allowHtml) {
+      const el = document.getElementById(id);
+      const head = '<thead><tr>' + headers.map(h => '<th>' + escapeHtml(h) + '</th>').join('') + '</tr></thead>';
+      const body = '<tbody>' + rows.map(row => '<tr>' + row.map(v => '<td>' + (allowHtml ? (v || '') : escapeHtml(v)) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+      el.innerHTML = head + body;
+    }
+
+    function flagCount(name) {
+      const row = ((state.dashboard || {}).byFlag || []).find(r => String(r.name).toLowerCase() === String(name).toLowerCase());
+      return row ? row.count : 0;
+    }
+
+    function hasAppsScript() {
+      return !!(window.google && google.script && google.script.run);
+    }
+
+    function showError(err) {
+      setStatus('ผิดพลาด: ' + (err && err.message ? err.message : err));
+    }
+
+    function fmt(n) {
+      return Number(n || 0).toLocaleString('th-TH');
+    }
+
+    function pad(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function mockData() {
+      const rows = [
+        ['ณัฐพล วรรณสังข์', 'Installation', 'CHON BURI', 'MUEANG CHON BURI', 'NONG KHANG KHOK', 'เมืองชลบุรี - หนองข้างคอก', '2026-06-01', 4],
+        ['ปิยนัฐ สุ่มมาตย์', 'Installation', 'CHON BURI', 'MUEANG CHON BURI', 'SAMET', 'เมืองชลบุรี - เสม็ด', '2026-06-01', 4],
+        ['อภิรักษ์ พูลพนัส', 'Installation', 'CHON BURI', 'PHANAT NIKHOM', 'SA SI LIAM', 'พนัสนิคม - สระสี่เหลี่ยม', '2026-06-01', 4],
+        ['วชิระ หอมรื่น', 'Change', 'CHON BURI', 'MUEANG CHON BURI', 'DON HUA LO', 'เมืองชลบุรี - ดอนหัวฬ่อ', '2026-06-01', 4],
+        ['เกียรติรักษ์ อยู่เย็น', 'Installation', 'CHANTHABURI', 'MUEANG CHANTHABURI', 'THA CHANG', 'เมืองจันทบุรี - ท่าช้าง', '2026-06-01', 4],
+        ['กมล อ่วมศิริ', 'Change', 'CHON BURI', 'MUEANG CHON BURI', 'SAMET', 'เมืองชลบุรี - เสม็ด', '2026-06-01', 3],
+        ['พิศกร งามจิต', 'Installation', 'CHON BURI', 'MUEANG CHON BURI', 'DON HUA LO', 'เมืองชลบุรี - ดอนหัวฬ่อ', '2026-06-01', 3],
+        ['เสมียน กลั่นเขตการณ์', 'Installation', 'CHON BURI', 'MUEANG CHON BURI', 'NA PA', 'เมืองชลบุรี - นาป่า', '2026-06-01', 4]
+      ];
+      const sampleRows = [];
+      let seedIndex = 0;
+      rows.forEach(r => {
+        for (let i = 0; i < r[6]; i++) {
+          sampleRows.push({
+            Handler: r[0],
+            'Install Flag': seedIndex < 56 ? 'Installation' : 'Change',
+            Province: r[2],
+            District: r[3],
+            'Sub-District': r[4],
+            Area: r[5],
+            'Appointment Date': r[6],
+            Team: teamForIndex(seedIndex),
+            'Work Order No.': 'W20260601' + String(sampleRows.length + 1).padStart(4, '0'),
+            'Operation Status': 'Completed'
+          });
+          seedIndex++;
+        }
+      });
+      while (sampleRows.length < 66) {
+        const base = rows[sampleRows.length % rows.length];
+        sampleRows.push({
+          Handler: base[0],
+          'Install Flag': sampleRows.length < 56 ? 'Installation' : 'Change',
+          Province: base[2],
+          District: base[3],
+          'Sub-District': base[4],
+          Area: base[5],
+          'Appointment Date': '2026-06-01',
+          Team: teamForIndex(sampleRows.length),
+          'Work Order No.': 'W20260601' + String(sampleRows.length + 1).padStart(4, '0'),
+          'Operation Status': 'Completed'
+        });
+      }
+      const dashboard = summarizeMock(sampleRows);
+      return {
+        columns: ['Handler', 'Install Flag', 'Team', 'Area', 'Province', 'District', 'Sub-District', 'Appointment Date', 'Work Order No.', 'Operation Status'],
+        dashboard,
+        history: [{ importAt: '2026-06-10 17:42:40', fileName: 'exportxls20260610173963589_0.xls', totalRows: 301, importedRows: 66, skippedTermination: 235, duplicateRows: 0, status: 'OK', sourceUrl: '' }]
+      };
+    }
+
+    function summarizeMock(records) {
+      const group = col => Object.entries(records.reduce((m, r) => (m[r[col] || '(blank)'] = (m[r[col] || '(blank)'] || 0) + 1, m), {}))
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+      const byHandler = group('Handler');
+      const byFlag = group('Install Flag');
+      const byProvince = group('Province');
+      const byDistrict = group('District');
+      const bySubDistrict = group('Sub-District');
+      const byArea = group('Area');
+      const byTeam = groupTeamMock(records);
+      const daily = group('Appointment Date').sort((a, b) => a.name.localeCompare(b.name));
+      const calendarDays = daily.map(d => {
+        const dayRows = records.filter(r => r['Appointment Date'] === d.name);
+        const teams = groupFrom(dayRows, 'Team');
+        const handlers = groupFrom(dayRows, 'Handler');
+        const subDistricts = groupFrom(dayRows, 'Sub-District');
+        const districts = groupFrom(dayRows, 'District');
+        const provinces = groupFrom(dayRows, 'Province');
+        return {
+          date: d.name,
+          total: dayRows.length,
+          installation: dayRows.filter(r => r['Install Flag'] === 'Installation').length,
+          change: dayRows.filter(r => r['Install Flag'] === 'Change').length,
+          handlerCount: handlers.length,
+          teamCount: teams.length,
+          topHandlers: handlers.slice(0, 4).map(x => x.name + ' ' + x.count).join(', '),
+          topTeams: teams.slice(0, 4).map(x => x.name + ' ' + x.count).join(', '),
+          topAreas: groupFrom(dayRows, 'Area').slice(0, 4).map(x => x.name + ' ' + x.count).join(', '),
+          subDistricts,
+          districts,
+          provinces,
+          teams,
+          handlers,
+          rows: dayRows.slice(0, 200).map(r => ({
+            team: r.Team,
+            handler: r.Handler,
+            flag: r['Install Flag'],
+            subDistrict: r['Sub-District'],
+            district: r.District,
+            province: r.Province,
+            workOrder: r['Work Order No.']
+          })),
+          areaText: groupFrom(dayRows, 'Area').slice(0, 3).map(x => x.name).join(', ') + ' / ' + provinces.length + ' จังหวัด / ' + districts.length + ' อำเภอ / ' + subDistricts.length + ' ตำบล'
+        };
+      });
+      const handlerStats = byHandler.map(h => {
+        const rs = records.filter(r => r.Handler === h.name);
+        return {
+          handler: h.name,
+          total: h.count,
+          installation: rs.filter(r => r['Install Flag'] === 'Installation').length,
+          change: rs.filter(r => r['Install Flag'] === 'Change').length,
+          teamText: groupFrom(rs, 'Team').slice(0, 8).map(x => x.name + ' (' + x.count + ')').join(', '),
+          primaryTeam: groupFrom(rs, 'Team')[0]?.name || '',
+          subDistrictCount: groupFrom(rs, 'Sub-District').length,
+          areaCount: groupFrom(rs, 'Area').length,
+          topAreas: groupFrom(rs, 'Area').slice(0, 4).map(x => x.name + ' (' + x.count + ')').join(', '),
+          topSubDistricts: groupFrom(rs, 'Sub-District').slice(0, 4).map(x => x.name + ' (' + x.count + ')').join(', '),
+          dates: groupFrom(rs, 'Appointment Date').map(x => x.name).join(', ')
+        };
+      });
+      const handlerLocations = byHandler.map(h => {
+        const rs = records.filter(r => r.Handler === h.name);
+        return {
+          handler: h.name,
+          locations: groupFrom(rs, 'Area').map(x => ({
+            location: x.name + ' | ' + rs.find(r => r.Area === x.name)['Sub-District'] + ' / ' + rs.find(r => r.Area === x.name).District + ' / ' + rs.find(r => r.Area === x.name).Province,
+            count: x.count,
+            dates: groupFrom(rs, 'Appointment Date').map(d => d.name).join(', ')
+          }))
+        };
+      });
+      return {
+        total: records.length,
+        byFlag,
+        byHandler,
+        byProvince,
+        byDistrict,
+        bySubDistrict,
+        byArea,
+        byTeam,
+        daily,
+        calendarDays,
+        handlerStats,
+        handlerLocations,
+        sampleRows: records,
+        detailedInsights: {
+          total: records.length,
+          installation: byFlag.find(x => x.name === 'Installation')?.count || 0,
+          change: byFlag.find(x => x.name === 'Change')?.count || 0,
+          handlerCount: byHandler.length,
+          areaCount: byArea.length,
+          subDistrictCount: bySubDistrict.length,
+          topHandler: byHandler[0],
+          topArea: byArea[0],
+          topDistrict: byDistrict[0],
+          topSubDistrict: bySubDistrict[0]
+        }
+      };
+    }
+
+    function groupTeamMock(records) {
+      const teams = groupFrom(records, 'Team');
+      return teams.map(t => {
+        const rs = records.filter(r => r.Team === t.name);
+        return {
+          team: t.name,
+          total: t.count,
+          installation: rs.filter(r => r['Install Flag'] === 'Installation').length,
+          change: rs.filter(r => r['Install Flag'] === 'Change').length,
+          handlerCount: groupFrom(rs, 'Handler').length,
+          topHandlers: groupFrom(rs, 'Handler').slice(0, 5).map(x => x.name + ' (' + x.count + ')').join(', '),
+          topAreas: groupFrom(rs, 'Area').slice(0, 5).map(x => x.name + ' (' + x.count + ')').join(', ')
+        };
+      }).sort((a, b) => b.total - a.total || a.team.localeCompare(b.team));
+    }
+
+    function teamForIndex(i) {
+      const teams = ['WW-ER-0004_Team1', 'WW-ER-0004_Team2', 'WW-ER-0004_Team3', 'WW-ER-0004_Team4'];
+      if (i < 22) return teams[0];
+      if (i < 40) return teams[1];
+      if (i < 55) return teams[2];
+      return teams[3];
+    }
+
+    function groupFrom(records, col) {
+      return Object.entries(records.reduce((m, r) => (m[r[col] || '(blank)'] = (m[r[col] || '(blank)'] || 0) + 1, m), {}))
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
