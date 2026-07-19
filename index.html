@@ -1068,12 +1068,23 @@
         setStatus('หน้านี้เป็นไฟล์ตัวอย่าง local: การอัปโหลดจริงใช้เมื่อ Deploy เป็น Google Web App');
         return;
       }
-      for (const file of files) {
-        setStatus('กำลังอัปโหลด ' + file.name + ' ...');
-        const payload = await readFilePayload(file);
-        await new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(res => {
+      const accepted = Array.from(files).filter(file => /\.(xls|xlsx|csv)$/i.test(file.name));
+      const rejected = Array.from(files).filter(file => !/\.(xls|xlsx|csv)$/i.test(file.name));
+      const results = [];
+      for (const file of accepted) {
+        if (file.size > 25 * 1024 * 1024) {
+          results.push({ name: file.name, ok: false, error: 'ไฟล์ใหญ่เกิน 25 MB' });
+          continue;
+        }
+        setStatus('กำลังนำเข้า ' + file.name + ' (' + (results.length + 1) + '/' + accepted.length + ') ...');
+        try {
+          const payload = await readFilePayload(file);
+          const res = await new Promise((resolve, reject) => {
+            google.script.run
+              .withSuccessHandler(resolve)
+              .withFailureHandler(err => reject(new Error(err && err.message ? err.message : String(err))))
+              .uploadFile(payload);
+          });
               state.dashboard = res.dashboard;
               state.columns = res.columns || state.columns;
               state.history = res.history || [];
@@ -1082,13 +1093,20 @@
               if (res.defaultMonth) document.getElementById('globalMonth').value = res.defaultMonth;
               state.currentMonth = inferMonth();
               afterDataLoaded();
-              setStatus('นำเข้า ' + res.fileName + ' สำเร็จ: เพิ่ม ' + res.result.importedRows + ' แถว, ตัด Termination ' + res.result.skippedTermination + ' แถว');
-              resolve();
-            })
-            .withFailureHandler(err => { showError(err); reject(err); })
-            .uploadFile(payload);
-        });
+          results.push({ name: file.name, ok: true, result: res.result });
+        } catch (err) {
+          results.push({ name: file.name, ok: false, error: err.message || String(err) });
+        }
       }
+      rejected.forEach(file => results.push({ name: file.name, ok: false, error: 'ชนิดไฟล์ไม่รองรับ' }));
+      const ok = results.filter(x => x.ok), failed = results.filter(x => !x.ok);
+      const added = ok.reduce((n, x) => n + Number(x.result.importedRows || 0), 0);
+      const duplicates = ok.reduce((n, x) => n + Number(x.result.duplicateRows || 0), 0);
+      const terminations = ok.reduce((n, x) => n + Number(x.result.skippedTermination || 0), 0);
+      let summary = 'เสร็จ ' + ok.length + '/' + results.length + ' ไฟล์: เพิ่ม ' + added + ' แถว, ซ้ำ ' + duplicates + ' แถว, ตัด Termination ' + terminations + ' แถว';
+      if (failed.length) summary += ' | ไม่สำเร็จ: ' + failed.map(x => x.name + ' (' + x.error + ')').join(', ');
+      setStatus(summary);
+      document.getElementById('fileInput').value = '';
     }
 
     function readFilePayload(file) {
