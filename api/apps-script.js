@@ -1,17 +1,7 @@
-const { sessions } = require('./session.js');
+const { verifyToken, getSession } = require('./session.js');
 
 // Google Apps Script deployment URL
 const GAS_URL = process.env.GAS_URL || 'https://script.google.com/macros/s/AKfycbzahp6g2Fkbet8ivCUVNIiVBgyJgnMA1jHrzpSpqgJ9UGlMeTfmkXubCOP22uMt257T/exec';
-
-function getSession(req) {
-  const cookie = (req.headers.cookie || '').split(';').map(c => c.trim());
-  for (const c of cookie) {
-    if (c.startsWith('sid=')) return c.slice(4);
-  }
-  const auth = req.headers.authorization;
-  if (auth && auth.startsWith('Bearer ')) return auth.slice(7);
-  return null;
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -22,9 +12,9 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  // Check authentication
+  // Check authentication via HMAC-signed token
   const token = getSession(req);
-  if (!token || !sessions.has(token)) {
+  if (!token || !verifyToken(token)) {
     return res.status(401).json({ ok: false, error: 'กรุณายืนยัน OTP ก่อนเข้าใช้งาน' });
   }
 

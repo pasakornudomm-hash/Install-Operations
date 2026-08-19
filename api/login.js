@@ -1,4 +1,4 @@
-const { sessions, generateToken } = require('./session.js');
+const { generateToken } = require('./session.js');
 
 // Credentials from env vars (set in Vercel dashboard)
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
@@ -19,8 +19,7 @@ module.exports = async (req, res) => {
   }
 
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    const token = generateToken();
-    sessions.set(token, { username, loginTime: new Date().toISOString() });
+    const token = generateToken({ username, iat: Date.now() });
     res.setHeader('Set-Cookie', `sid=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
     return res.status(200).json({ ok: true, token });
   }

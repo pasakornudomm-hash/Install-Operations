@@ -1,10 +1,21 @@
 const crypto = require('crypto');
 
-// In-memory session store (resets on cold start, but that's fine for Vercel)
-const sessions = new Map();
+const SECRET = process.env.SESSION_SECRET || 'mycenter-kpi-secret-2026';
 
-function generateToken() {
-  return crypto.randomBytes(24).toString('hex');
+function generateToken(payload) {
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+  return `${data}.${sig}`;
+}
+
+function verifyToken(token) {
+  try {
+    const [data, sig] = token.split('.');
+    if (!data || !sig) return null;
+    const expected = crypto.createHmac('sha256', SECRET).update(data).digest('base64url');
+    if (sig !== expected) return null;
+    return JSON.parse(Buffer.from(data, 'base64url').toString());
+  } catch (_) { return null; }
 }
 
 function getSession(req) {
@@ -17,20 +28,4 @@ function getSession(req) {
   return null;
 }
 
-module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const token = getSession(req);
-  if (token && sessions.has(token)) {
-    return res.status(200).json({ authenticated: true, user: sessions.get(token) });
-  }
-  return res.status(200).json({ authenticated: false });
-};
-
-// Export for login.js to use
-module.exports.sessions = sessions;
-module.exports.generateToken = generateToken;
+module.exports = { generateToken, verifyToken, getSession };
