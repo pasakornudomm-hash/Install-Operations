@@ -546,6 +546,8 @@
     .mini span { color: var(--muted); font-size: 11px; }
     .muted { color: var(--muted); }
     .status { min-height: 20px; color: var(--muted); font-size: 12px; margin-top: 6px; }
+    #refreshDashboard.loading { opacity: .6; pointer-events: none; }
+    #refreshDashboard.loading::before { content: '⏳ '; }
     .global-filters {
       display: grid;
       grid-template-columns: 180px 240px 120px minmax(220px, 1fr);
@@ -689,6 +691,7 @@
               <input id="fileInput" type="file" multiple accept=".xls,.xlsx,.csv" style="display:none">
             </div>
             <button id="pickBtn">เลือกไฟล์</button>
+            <button id="refreshDashboard" class="secondary" type="button" title="รีเฟชข้อมูล">🔄 รีเฟช</button>
           </div>
         </div>
         <div class="global-filters">
@@ -913,6 +916,14 @@
     document.getElementById('fileInput').addEventListener('change', e => uploadFiles(e.target.files));
     document.getElementById('searchBtn').addEventListener('click', runSearch);
     document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('refreshDashboard').addEventListener('click', function() {
+      const btn = this;
+      btn.classList.add('loading');
+      btn.textContent = '⏳ กำลังโหลด...';
+      loadData();
+      setStatus('กำลังรีเฟชข้อมูล...');
+      setTimeout(function() { btn.classList.remove('loading'); btn.textContent = '🔄 รีเฟช'; }, 3000);
+    });
     document.getElementById('prevMonth').addEventListener('click', () => moveMonth(-1));
     document.getElementById('nextMonth').addEventListener('click', () => moveMonth(1));
     document.getElementById('handlerFilter').addEventListener('input', renderHandlers);
