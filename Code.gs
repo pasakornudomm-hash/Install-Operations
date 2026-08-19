@@ -5,7 +5,7 @@ const APP = {
   defaultFolderName: 'MyCenter Install Dashboard Uploads',
   terminationText: 'termination',
   addressColumnIndex: 18, // Column R in the imported source file.
-  dashboardSampleLimit: 300,
+  dashboardSampleLimit: 5000,
   searchLimit: 1000,
   historyLimit: 100,
   metaHeaders: ['_Import File', '_Import At', '_Source File ID', '_Source URL', '_Row Hash'],

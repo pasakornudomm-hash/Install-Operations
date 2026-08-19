@@ -2334,7 +2334,7 @@
     }
 
     /* ── Handler Detail: คลิกดูงานทั้งหมดของแต่ละชื่อ ── */
-    function showHandlerDetail(handlerName) {
+    async function showHandlerDetail(handlerName) {
       const panel = document.getElementById('handlerDetailPanel');
       if (!panel) return;
       // Toggle if same handler clicked again
@@ -2351,15 +2351,36 @@
           c.classList.add('active');
         }
       });
-      // Filter rows
-      const rows = (state.allRows || []).filter(r => {
+      // Show loading
+      panel.innerHTML = '<div class="hd-head"><div class="hd-title">📋 กำลังโหลดข้อมูลงานของ ' + escapeHtml(handlerName) + '...</div></div>';
+      panel.style.display = 'block';
+      panel.dataset.handler = handlerName;
+
+      // Try local rows first
+      let rows = (state.allRows || []).filter(r => {
         const h = String(r['Handler'] || '').trim();
         return h === handlerName;
       });
+
+      // If not found locally, fetch from API
+      if (!rows.length && hasAppsScript()) {
+        try {
+          const res = await callServer('searchRecords', [{ query: '', fromDate: '', toDate: '', columnFilters: { Handler: handlerName } }]);
+          rows = (res.rows || []).map(r => ({
+            'Service Access No.': r['Service Access No.'] || r['Work Order No.'] || '',
+            'Install Flag': r['Install Flag'] || '',
+            'Appointment Date': r['Appointment Date'] || '',
+            'Team': r['Team'] || '',
+            'Province': r['Province'] || '',
+            'District': r['District'] || '',
+            'Sub-District': r['Sub-District'] || '',
+            'Handler': r['Handler'] || handlerName
+          }));
+        } catch (e) { rows = []; }
+      }
+
       if (!rows.length) {
-        panel.innerHTML = '<div class="hd-head"><div class="hd-title">ไม่พบข้อมูลงานของ ' + escapeHtml(handlerName) + '</div></div>';
-        panel.style.display = 'block';
-        panel.dataset.handler = handlerName;
+        panel.innerHTML = '<div class="hd-head"><div class="hd-title">ไม่พบข้อมูลงานของ ' + escapeHtml(handlerName) + '</div><button class="secondary hd-close" onclick="document.getElementById(\'handlerDetailPanel\').style.display=\'none\'">✕ ปิด</button></div>';
         return;
       }
       // Sort by date desc
@@ -2373,7 +2394,6 @@
       const installCount = rows.filter(r => String(r['Install Flag'] || '').toLowerCase() === 'installation').length;
       const changeCount = rows.filter(r => String(r['Install Flag'] || '').toLowerCase() === 'change').length;
       const provinces = [...new Set(rows.map(r => r['Province']).filter(Boolean))];
-      const teams = [...new Set(rows.map(r => r['Team']).filter(Boolean))];
 
       let html = '<div class="hd-head">';
       html += '<div class="hd-title">📋 งานทั้งหมดของ ' + escapeHtml(handlerName) + '</div>';
@@ -2399,8 +2419,6 @@
       });
       html += '</tbody></table></div>';
       panel.innerHTML = html;
-      panel.style.display = 'block';
-      panel.dataset.handler = handlerName;
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
