@@ -31,6 +31,37 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents || '{}');
+    const action = body.action || body.fn || '';
+    const args = body.args || [];
+    let result;
+    switch (action) {
+      case 'getBootstrapData':
+        result = getBootstrapData();
+        break;
+      case 'searchRecords':
+        result = searchRecords(args[0] || {});
+        break;
+      case 'uploadFile':
+        result = uploadFile(args[0] || {});
+        break;
+      case 'getImportHistory':
+        result = getImportHistory();
+        break;
+      case 'getDashboardData':
+        result = getBootstrapData();
+        break;
+      default:
+        throw new Error('Unknown action: ' + action);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, data: result })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function setupWorkbook() {
   const ss = SpreadsheetApp.getActive();
   const raw = getOrCreateSheet_(ss, APP.rawSheet);
