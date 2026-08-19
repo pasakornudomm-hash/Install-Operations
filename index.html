@@ -597,6 +597,28 @@
     .update-status.warn { background: #fef3c7; color: #92400e; }
     .update-status.late { background: #fee2e2; color: #991b1b; }
     .update-status.none { background: #f1f5f9; color: #64748b; }
+
+    /* ── Province Work Orders view ── */
+    .pw-row { cursor: pointer; }
+    .pw-row:hover { background: #f8fafc; }
+    .pw-expand { font-size: 11px; color: #64748b; transition: transform 0.2s; display: inline-block; }
+    .pw-expand.open { transform: rotate(90deg); }
+    .pw-detail-row { display: none; }
+    .pw-detail-row.open { display: table-row; }
+    .pw-detail-row td { padding: 0 8px 8px 8px; background: #f8fafc; }
+    .pw-detail-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .pw-detail-table th { background: #e2e8f0; padding: 6px 10px; text-align: left; font-size: 12px; white-space: nowrap; }
+    .pw-detail-table td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+    .pw-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .pw-badge.install { background: #dbeafe; color: #1e40af; }
+    .pw-badge.change { background: #fef3c7; color: #92400e; }
+    .pw-badge.total { background: #f1f5f9; color: #475569; }
+    .pw-province-count { font-size: 12px; color: #64748b; margin-left: 6px; }
+    .pw-kpi-summary { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .pw-kpi-box { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 20px; text-align: center; min-width: 140px; flex: 1; }
+    .pw-kpi-box .kpi-value { font-size: 28px; font-weight: 700; color: #1e293b; }
+    .pw-kpi-box .kpi-label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+    .pw-summary { font-size: 13px; color: #475569; margin-bottom: 10px; }
   </style>
 
 <script>
@@ -685,6 +707,7 @@
         <button data-view="search">ค้นหาไฟล์</button>
         <button data-view="history">ประวัตินำเข้า</button>
         <button data-view="provinceUpdates">สถานะอัปเดตจังหวัด</button>
+        <button data-view="provinceWorkOrders">ชื่องานตามจังหวัด</button>
       </nav>
       <div class="side-note">
         ตัด `Termination` อัตโนมัติ และนับเฉพาะงานที่เหลือ เช่น Installation / Change ตามวันที่นัดหมาย
@@ -904,6 +927,25 @@
             </div>
           </div>
         </section>
+        <section id="provinceWorkOrders" class="view">
+          <div class="pw-kpi-summary">
+            <div class="pw-kpi-box"><div class="kpi-label">จังหวัดทั้งหมด</div><div id="pwProvinceCount" class="kpi-value">0</div></div>
+            <div class="pw-kpi-box"><div class="kpi-label">รายการงานทั้งหมด</div><div id="pwTotalOrders" class="kpi-value">0</div></div>
+            <div class="pw-kpi-box"><div class="kpi-label">Installation</div><div id="pwInstallCount" class="kpi-value">0</div></div>
+            <div class="pw-kpi-box"><div class="kpi-label">Change</div><div id="pwChangeCount" class="kpi-value">0</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">ชื่องานแยกตามจังหวัด</div><div class="panel-sub" id="pwSummary">กำลังเตรียมข้อมูล...</div></div>
+              <div class="update-toolbar">
+                <input id="pwSearch" placeholder="ค้นหาจังหวัด / Work Order / Handler">
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="table-wrap"><table id="pwTable"></table></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -947,7 +989,8 @@
       handlers: ['แดชบอร์ดของแต่ละชื่อ', 'เจาะลึก Handler ว่าทำงาน Area ไหน วันที่เท่าไหร่'],
       search: ['ค้นหาไฟล์', 'ค้นหาและกรองข้อมูลได้ทุกคอลัมน์'],
       history: ['ประวัตินำเข้า', 'ตรวจสอบไฟล์ที่เพิ่มเข้ามาและแถวที่ถูกตัดออก'],
-      provinceUpdates: ['สถานะอัปเดตจังหวัด', 'ดูว่าจังหวัดใดอัปเดตล่าสุด จังหวัดใดล่าช้า และข้อมูลครอบคลุมถึงวันไหน']
+      provinceUpdates: ['สถานะอัปเดตจังหวัด', 'ดูว่าจังหวัดใดอัปเดตล่าสุด จังหวัดใดล่าช้า และข้อมูลครอบคลุมถึงวันไหน'],
+      provinceWorkOrders: ['ชื่องานตามจังหวัด', 'ดูงานแต่ละจังหวัดว่ามี Work Order อะไรบ้าง จังหวัดไหนยังไม่ได้อัปเดท']
     };
 
     document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
@@ -980,6 +1023,9 @@
       e.preventDefault(); dropzone.classList.remove('drag');
     }));
     dropzone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
+    document.getElementById('provinceUpdateRefresh').addEventListener('click', () => loadProvinceUpdates(true));
+    document.getElementById('provinceUpdateSearch').addEventListener('input', renderProvinceUpdateTable);
+    document.getElementById('pwSearch').addEventListener('input', renderProvinceWorkOrders);
 
     function switchView(view) {
       document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -990,6 +1036,7 @@
       if (view === 'calendar') renderCalendar();
       if (view === 'handlers') renderHandlers();
       if (view === 'provinceUpdates') loadProvinceUpdates(false);
+      if (view === 'provinceWorkOrders') renderProvinceWorkOrders();
     }
 
     function setStatus(text) {
@@ -1107,6 +1154,112 @@
       const table = document.getElementById('provinceUpdateTable');
       table.innerHTML = '<thead><tr><th>จังหวัด</th><th>สถานะ</th><th>อัปเดตล่าสุด</th><th>ช้ากว่า</th><th>ข้อมูลถึงวันที่</th><th>ไฟล์ล่าสุด</th><th>รายการ</th></tr></thead><tbody>' +
         rows.map(x => '<tr><td><b>' + escapeHtml(x.province) + '</b></td><td><span class="update-status ' + x.status + '">' + labels[x.status] + '</span></td><td>' + escapeHtml(x.latestImport || '-') + '</td><td>' + (x.daysBehind == null ? '-' : fmt(x.daysBehind) + ' วัน') + '</td><td>' + escapeHtml(x.latestAppointment || '-') + '</td><td>' + escapeHtml(x.latestFile || '-') + '</td><td>' + fmt(x.total) + '</td></tr>').join('') + '</tbody>';
+    }
+
+    /* ── Province Work Orders: แสดงชื่องานแยกตามจังหวัด ── */
+    function renderProvinceWorkOrders() {
+      const q = String(document.getElementById('pwSearch').value || '').trim().toLowerCase();
+      const rows = state.allRows || [];
+      if (!rows.length) {
+        document.getElementById('pwSummary').textContent = 'ยังไม่มีข้อมูล — โปรดล็อกอินและโหลดข้อมูลก่อน';
+        return;
+      }
+      // Group by province
+      const byProv = {};
+      rows.forEach(r => {
+        const prov = canonicalProvinceName(r['Province'] || '');
+        if (!prov || prov === '(blank)') return;
+        if (!byProv[prov]) byProv[prov] = [];
+        byProv[prov].push(r);
+      });
+      const provinces = Object.keys(byProv).sort();
+      // Summary
+      let totalInstall = 0, totalChange = 0;
+      rows.forEach(r => {
+        const flag = String(r['Install Flag'] || '').toLowerCase();
+        if (flag === 'installation') totalInstall++;
+        if (flag === 'change') totalChange++;
+      });
+      document.getElementById('pwProvinceCount').textContent = fmt(provinces.length);
+      document.getElementById('pwTotalOrders').textContent = fmt(rows.length);
+      document.getElementById('pwInstallCount').textContent = fmt(totalInstall);
+      document.getElementById('pwChangeCount').textContent = fmt(totalChange);
+      // Filter by search
+      const filtered = provinces.filter(prov => {
+        if (!q) return true;
+        const provLower = prov.toLowerCase();
+        if (provLower.includes(q)) return true;
+        // Also search within work orders
+        return byProv[prov].some(r => {
+          const wo = String(r['Work Order No.'] || '').toLowerCase();
+          const handler = String(r['Handler'] || '').toLowerCase();
+          const flag = String(r['Install Flag'] || '').toLowerCase();
+          const dist = String(r['District'] || '').toLowerCase();
+          const sub = String(r['Sub-District'] || '').toLowerCase();
+          return wo.includes(q) || handler.includes(q) || flag.includes(q) || dist.includes(q) || sub.includes(q);
+        });
+      });
+      document.getElementById('pwSummary').textContent = q
+        ? 'แสดง ' + filtered.length + ' จังหวัด จาก ' + provinces.length + ' จังหวัด (ค้นหา: "' + escapeHtml(q) + '")'
+        : 'แสดง ' + provinces.length + ' จังหวัด — คลิกชื่อจังหวัดเพื่อดูรายละเอียด Work Order';
+      // Build table
+      const table = document.getElementById('pwTable');
+      let html = '<thead><tr><th style="width:40px"></th><th>จังหวัด</th><th>จำนวนงาน</th><th>Installation</th><th>Change</th><th>Handler</th></tr></thead><tbody>';
+      filtered.forEach((prov, idx) => {
+        const provRows = byProv[prov];
+        const pInstall = provRows.filter(r => String(r['Install Flag']).toLowerCase() === 'installation').length;
+        const pChange = provRows.filter(r => String(r['Install Flag']).toLowerCase() === 'change').length;
+        const handlers = [...new Set(provRows.map(r => r['Handler']).filter(Boolean))];
+        const handlerText = handlers.length <= 3 ? handlers.join(', ') : handlers.slice(0, 3).join(', ') + ' + ' + (handlers.length - 3);
+        html += '<tr class="pw-row" data-prov="' + escapeHtml(prov) + '" onclick="togglePwDetail(this)">';
+        html += '<td><span class="pw-expand">▶</span></td>';
+        html += '<td><b>' + escapeHtml(prov) + '</b></td>';
+        html += '<td><span class="pw-badge total">' + fmt(provRows.length) + '</span></td>';
+        html += '<td><span class="pw-badge install">' + fmt(pInstall) + '</span></td>';
+        html += '<td><span class="pw-badge change">' + fmt(pChange) + '</span></td>';
+        html += '<td style="font-size:12px;color:#64748b">' + escapeHtml(handlerText) + '</td>';
+        html += '</tr>';
+        // Expandable detail row
+        html += '<tr class="pw-detail-row" data-prov-detail="' + escapeHtml(prov) + '"><td colspan="6">';
+        html += '<table class="pw-detail-table"><thead><tr><th>Work Order No.</th><th>Handler</th><th>ประเภทงาน</th><th>วันที่นัดหมาย</th><th>Team</th><th>อำเภอ</th><th>ตำบล</th></tr></thead><tbody>';
+        // Sort detail rows: latest date first, then by WO
+        provRows.sort((a, b) => {
+          const da = String(a['Appointment Date'] || '');
+          const db = String(b['Appointment Date'] || '');
+          if (da !== db) return db.localeCompare(da);
+          return String(a['Work Order No.'] || '').localeCompare(String(b['Work Order No.'] || ''));
+        });
+        provRows.forEach(r => {
+          const flag = String(r['Install Flag'] || '');
+          const flagClass = flag.toLowerCase() === 'installation' ? 'install' : flag.toLowerCase() === 'change' ? 'change' : 'total';
+          html += '<tr>';
+          html += '<td>' + escapeHtml(String(r['Work Order No.'] || '-')) + '</td>';
+          html += '<td>' + escapeHtml(String(r['Handler'] || '-')) + '</td>';
+          html += '<td><span class="pw-badge ' + flagClass + '">' + escapeHtml(flag || '-') + '</span></td>';
+          html += '<td>' + escapeHtml(String(r['Appointment Date'] || '-')) + '</td>';
+          html += '<td>' + escapeHtml(String(r['Team'] || '-')) + '</td>';
+          html += '<td>' + escapeHtml(String(r['District'] || '-')) + '</td>';
+          html += '<td>' + escapeHtml(String(r['Sub-District'] || '-')) + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></td></tr>';
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function togglePwDetail(row) {
+      const expand = row.querySelector('.pw-expand');
+      const detail = row.nextElementSibling;
+      if (!detail || !detail.classList.contains('pw-detail-row')) return;
+      const isOpen = detail.classList.contains('open');
+      // Close all others first
+      document.querySelectorAll('.pw-detail-row.open').forEach(el => el.classList.remove('open'));
+      document.querySelectorAll('.pw-expand.open').forEach(el => el.classList.remove('open'));
+      if (!isOpen) {
+        detail.classList.add('open');
+        if (expand) expand.classList.add('open');
+      }
     }
 
     function parseImportDate(value) {
