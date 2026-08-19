@@ -2560,7 +2560,7 @@
     }
 
     function svcAccessNo(r) {
-      return String(r['Service Access No.'] || r['Work Order No.'] || '').replace(/,/g, '');
+      return String(r['Service Access No.'] || r['Work Order No.'] || r.workOrder || '').replace(/,/g, '');
     }
 
     function escapeHtml(value) {
