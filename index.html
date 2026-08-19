@@ -32,6 +32,28 @@
       background: var(--bg);
       font-family: "Noto Sans Thai", "Segoe UI", Tahoma, sans-serif;
     }
+    body.auth-pending { overflow: hidden; }
+    .auth-gate { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px; background: linear-gradient(145deg, #15203a, #0f172a); }
+    .auth-gate[hidden] { display: none; }
+    .auth-card { width: min(420px, 100%); padding: 30px; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.35); text-align: center; }
+    .auth-card .mark { margin: 0 auto 14px; }
+    .auth-card h2 { margin: 0 0 8px; }
+    .auth-card p { color: var(--muted); }
+    .auth-card input { width: 100%; margin: 10px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 22px; text-align: center; letter-spacing: .25em; }
+    .auth-card button { width: 100%; padding: 12px; margin-top: 8px; }
+    .auth-error { min-height: 22px; color: #b42318; font-size: 13px; }
+    .update-kpis { grid-template-columns: repeat(4, minmax(150px, 1fr)); }
+    .update-kpi { padding: 16px; border-left: 5px solid #64748b; }
+    .update-kpi.good { border-left-color: #16a34a; }
+    .update-kpi.warn { border-left-color: #f59e0b; }
+    .update-kpi.late { border-left-color: #dc2626; }
+    .update-kpi.none { border-left-color: #64748b; }
+    .update-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 10px; width: min(520px, 100%); }
+    .update-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; font-weight: 900; font-size: 12px; white-space: nowrap; }
+    .update-status.good { color: #166534; background: #dcfce7; }
+    .update-status.warn { color: #92400e; background: #fef3c7; }
+    .update-status.late { color: #991b1b; background: #fee2e2; }
+    .update-status.none { color: #475569; background: #e2e8f0; }
     .app {
       min-height: 100vh;
       display: grid;
@@ -341,6 +363,9 @@
       font-size: 11px;
     }
     .event span { display: block; color: #475569; }
+    .province-day-list { display: grid; gap: 3px; margin-top: 3px; }
+    .province-day-row { display: flex; justify-content: space-between; gap: 5px; padding: 3px 5px; border-radius: 4px; background: #eef2ff; color: #243b6b; font-size: 10px; font-weight: 800; }
+    .province-day-row.zero { color: #94a3b8; background: #f8fafc; }
     .pill {
       display: inline-flex;
       align-items: center;
@@ -566,6 +591,7 @@
       .global-filters { grid-template-columns: 1fr; }
       .filter-note { text-align: left; }
       .kpis, .two, .three, .filters, .column-filters { grid-template-columns: 1fr; }
+      .update-kpis, .update-toolbar { grid-template-columns: 1fr; }
       .day-metrics, .day-detail-columns { grid-template-columns: 1fr; }
       .day-filter-grid { grid-template-columns: 1fr; }
       .calendar-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
@@ -586,16 +612,27 @@
         if (method === "withFailureHandler") return function (handler) { onFailure = typeof handler === "function" ? handler : onFailure; return runner; };
         return function () {
           const args = Array.prototype.slice.call(arguments);
-          fetch("https://script.google.com/macros/s/AKfycbzahp6g2Fkbet8ivCUVNIiVBgyJgnMA1jHrzpSpqgJ9UGlMeTfmkXubCOP22uMt257T/exec", {
-            method: "POST", redirect: "follow",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: String(method), args: args })
-          })
-            .then(function (response) { return response.text().then(function (text) {
-              let body; try { body = JSON.parse(text); } catch (_) { throw new Error("Apps Script ตอบกลับไม่ใช่ JSON"); }
-              if (!response.ok || !body.ok) throw new Error(body.error || "เรียกข้อมูลจาก Apps Script ไม่สำเร็จ");
+          const readActions = ["getBootstrapData", "getDashboardData", "searchRecords", "getImportHistory"];
+          function request(attempt) {
+            return fetch("/api/apps-script", {
+              method: "POST", redirect: "follow",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: String(method), args: args })
+            }).then(function (response) { return response.text().then(function (text) {
+              let body;
+              try { body = JSON.parse(text); }
+              catch (_) {
+                if (!attempt && readActions.includes(String(method))) return new Promise(resolve => setTimeout(resolve, 900)).then(() => request(1));
+                throw new Error("Google Apps Script ตอบช้า กรุณากดโหลดใหม่อีกครั้ง");
+              }
+              if (!response.ok || !body.ok) {
+                if (!attempt && response.status >= 500 && readActions.includes(String(method))) return new Promise(resolve => setTimeout(resolve, 900)).then(() => request(1));
+                throw new Error(body.error || "เรียกข้อมูลจาก Apps Script ไม่สำเร็จ");
+              }
               return body.data;
-            }); })
+            }); });
+          }
+          request(0)
             .then(onSuccess)
             .catch(function (error) { onFailure({ message: error && error.message ? error.message : String(error) }); });
         };
@@ -609,7 +646,39 @@
 }());
 </script>
 </head>
-<body>
+<body class="auth-pending">
+  <section id="authGate" class="auth-gate" aria-live="polite">
+    <div class="auth-card">
+      <div class="mark">MC</div>
+      <h2>เข้าสู่ระบบ MyCenter</h2>
+      <p>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน</p>
+      <form id="loginForm">
+        <input id="loginUser" autocomplete="username" placeholder="ชื่อผู้ใช้" required>
+        <input id="loginPassword" type="password" inputmode="numeric" autocomplete="current-password" placeholder="รหัสผ่าน" required>
+        <button type="submit">เข้าสู่ระบบ</button>
+      </form>
+      <div id="authError" class="auth-error"></div>
+    </div>
+  </section>
+  <script>
+  (function () {
+    const gate = document.getElementById('authGate');
+    const form = document.getElementById('loginForm');
+    const username = document.getElementById('loginUser');
+    const password = document.getElementById('loginPassword');
+    const error = document.getElementById('authError');
+    function unlock() { gate.hidden = true; document.body.classList.remove('auth-pending'); }
+    fetch('/api/session', { cache: 'no-store' }).then(r => r.json()).then(x => { if (x.authenticated) unlock(); }).catch(() => {});
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault(); error.textContent = '';
+      try {
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: username.value, password: password.value }) });
+        const x = await r.json(); if (!r.ok || !x.ok) throw new Error(x.error || 'เข้าสู่ระบบไม่สำเร็จ');
+        unlock(); location.reload();
+      } catch (e) { error.textContent = e.message; }
+    });
+  }());
+  </script>
   <div class="app">
     <aside>
       <div class="brand">
@@ -624,6 +693,7 @@
         <button data-view="calendar">ปฏิทินรายเดือน</button>
         <button data-view="handlers">แดชบอร์ดรายชื่อ</button>
         <button data-view="search">ค้นหาไฟล์</button>
+        <button data-view="provinceUpdates">สถานะอัปเดตจังหวัด</button>
         <button data-view="history">ประวัตินำเข้า</button>
       </nav>
       <div class="side-note">
@@ -822,6 +892,28 @@
             <div class="panel-body table-wrap"><table id="historyTable"></table></div>
           </div>
         </section>
+
+        <section id="provinceUpdates" class="view">
+          <div class="grid update-kpis">
+            <div class="panel update-kpi good"><div class="kpi-label">อัปเดตล่าสุด</div><div id="provinceGoodCount" class="kpi-value">0</div><div class="kpi-note">วันเดียวกับข้อมูลล่าสุด</div></div>
+            <div class="panel update-kpi warn"><div class="kpi-label">ควรตรวจสอบ</div><div id="provinceWarnCount" class="kpi-value">0</div><div class="kpi-note">ช้ากว่า 1–3 วัน</div></div>
+            <div class="panel update-kpi late"><div class="kpi-label">ยังไม่อัปเดต</div><div id="provinceLateCount" class="kpi-value">0</div><div class="kpi-note">ช้ากว่าเกิน 3 วัน</div></div>
+            <div class="panel update-kpi none"><div class="kpi-label">ไม่พบข้อมูล</div><div id="provinceNoneCount" class="kpi-value">0</div><div class="kpi-note">ไม่มีเวลานำเข้า</div></div>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <div class="panel-head">
+              <div><div class="panel-title">สถานะอัปเดตรายจังหวัด</div><div id="provinceUpdateReference" class="panel-sub">กำลังเตรียมข้อมูล...</div></div>
+              <div class="update-toolbar">
+                <input id="provinceUpdateSearch" placeholder="ค้นหาจังหวัดหรือชื่อไฟล์">
+                <button id="provinceUpdateRefresh" class="secondary" type="button">โหลดใหม่</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div id="provinceUpdateProgress" class="status"></div>
+              <div class="table-wrap"><table id="provinceUpdateTable"></table></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -837,18 +929,10 @@
       allRows: [],
       allTeams: [],
       applyingFilters: false,
-      
-    /* debounce + filter cache */
-    let _filterTimer = null;
-    function debounce(fn, ms) { return function() { clearTimeout(_filterTimer); _filterTimer = setTimeout(() => fn.apply(this, arguments), ms); }; }
-    function filterCacheKey(f) { return JSON.stringify({ m: f.fromDate, t: f.toDate, c: f.columnFilters, q: f.query }); }
-    function getFilterCache(key, maxAge) {
-      try { const c = JSON.parse(sessionStorage.getItem("fc_" + key) || "null"); return c && Date.now() - c.at < maxAge ? c.data : null; } catch(_) { return null; }
-    }
-    function setFilterCache(key, data) {
-      try { sessionStorage.setItem("fc_" + key, JSON.stringify({ at: Date.now(), data: data })); } catch(_) {}
-    }
-chartsReady: false
+      chartsReady: false
+      ,provinceUpdates: [],
+      provinceUpdatesLoaded: false,
+      provinceUpdatesLoading: false
     };
     if (window.google && google.charts) {
       google.charts.load('current', { packages: ['corechart', 'bar'] });
@@ -872,6 +956,7 @@ chartsReady: false
       calendar: ['ปฏิทินยอดงานรายเดือน', 'ดูยอดรายวันในรูปแบบปฏิทิน พร้อมจำนวน Change เฉพาะวันที่มีงาน'],
       handlers: ['แดชบอร์ดของแต่ละชื่อ', 'เจาะลึก Handler ว่าทำงาน Area ไหน วันที่เท่าไหร่'],
       search: ['ค้นหาไฟล์', 'ค้นหาและกรองข้อมูลได้ทุกคอลัมน์'],
+      provinceUpdates: ['สถานะอัปเดตจังหวัด', 'ดูว่าจังหวัดใดอัปเดตล่าสุด จังหวัดใดล่าช้า และข้อมูลครอบคลุมถึงวันไหน'],
       history: ['ประวัตินำเข้า', 'ตรวจสอบไฟล์ที่เพิ่มเข้ามาและแถวที่ถูกตัดออก']
     };
 
@@ -880,14 +965,16 @@ chartsReady: false
     document.getElementById('fileInput').addEventListener('change', e => uploadFiles(e.target.files));
     document.getElementById('searchBtn').addEventListener('click', runSearch);
     document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('provinceUpdateRefresh').addEventListener('click', () => loadProvinceUpdates(true));
+    document.getElementById('provinceUpdateSearch').addEventListener('input', renderProvinceUpdateTable);
     document.getElementById('prevMonth').addEventListener('click', () => moveMonth(-1));
     document.getElementById('nextMonth').addEventListener('click', () => moveMonth(1));
     document.getElementById('handlerFilter').addEventListener('input', renderHandlers);
     document.getElementById('handlerTeamFilter').addEventListener('change', renderHandlers);
     document.getElementById('handlerTeamApply').addEventListener('click', renderHandlers);
-    document.getElementById('applyGlobalFilters').addEventListener('click', () => applyGlobalFilters(true));
-    document.getElementById('globalMonth').addEventListener('change', debounce(() => applyGlobalFilters(true), 400));
-    document.getElementById('globalTeam').addEventListener('change', debounce(() => applyGlobalFilters(true), 400));
+    document.getElementById('applyGlobalFilters').addEventListener('click', _debounce(() => applyGlobalFilters(true), 400));
+    document.getElementById('globalMonth').addEventListener('change', _debounce(() => applyGlobalFilters(true), 400));
+    document.getElementById('globalTeam').addEventListener('change', _debounce(() => applyGlobalFilters(true), 400));
 
     const dropzone = document.getElementById('dropzone');
     ['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
@@ -906,6 +993,148 @@ chartsReady: false
       if (view === 'dashboard') drawDashboard();
       if (view === 'calendar') renderCalendar();
       if (view === 'handlers') renderHandlers();
+      if (view === 'provinceUpdates') loadProvinceUpdates(false);
+    }
+
+    function callServer(method, args) {
+      return new Promise((resolve, reject) => {
+        const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(err => reject(new Error(err && err.message ? err.message : String(err))));
+        runner[method].apply(runner, args || []);
+      });
+    }
+
+    async function loadProvinceUpdates(force) {
+      if (!force && !state.provinceUpdatesLoaded) {
+        const cached = readSessionCache('mycenter_province_cache', 6 * 60 * 60 * 1000);
+        if (cached && cached.length) {
+          state.provinceUpdates = cached;
+          state.provinceUpdatesLoaded = true;
+          classifyProvinceUpdates();
+          renderProvinceUpdateTable();
+          document.getElementById('provinceUpdateProgress').textContent = '';
+          return;
+        }
+      }
+      if (state.provinceUpdatesLoading || (state.provinceUpdatesLoaded && !force)) {
+        renderProvinceUpdateTable();
+        return;
+      }
+      state.provinceUpdatesLoading = true;
+      state.provinceUpdatesLoaded = false;
+      const progress = document.getElementById('provinceUpdateProgress');
+      const provinceGroups = {};
+      ((state.dashboard || {}).byProvince || []).map(x => x.name).filter(x => x && x !== '(blank)').forEach(sourceName => {
+        const canonical = canonicalProvinceName(sourceName);
+        if (!provinceGroups[canonical]) provinceGroups[canonical] = [];
+        provinceGroups[canonical].push(sourceName);
+      });
+      const provinces = Object.keys(provinceGroups).sort();
+      progress.textContent = provinces.length ? 'กำลังตรวจสอบ 0/' + provinces.length + ' จังหวัด...' : 'ไม่พบจังหวัดในข้อมูลปัจจุบัน';
+      const result = [];
+      try {
+        for (let i = 0; i < provinces.length; i++) {
+          const province = provinces[i];
+          progress.textContent = 'กำลังตรวจสอบ ' + (i + 1) + '/' + provinces.length + ' จังหวัด: ' + province;
+          const responses = [];
+          for (const sourceName of provinceGroups[province]) {
+            try {
+              responses.push(await callServer('searchRecords', [{ query: '', fromDate: '', toDate: '', columnFilters: { Province: sourceName } }]));
+            } catch (_) {
+              responses.push({ rows: [], total: 0 });
+            }
+          }
+          const rows = responses.flatMap(response => response.rows || []);
+          let latestImport = '';
+          let latestAppointment = '';
+          let latestFile = '';
+          rows.forEach(row => {
+            const imported = String(row['_Import At'] || '');
+            if (imported && imported > latestImport) {
+              latestImport = imported;
+              latestFile = String(row['_Import File'] || '');
+            }
+            const appointment = String(row['Appointment Date'] || '');
+            if (appointment && appointment > latestAppointment) latestAppointment = appointment;
+          });
+          result.push({ province, latestImport, latestAppointment, latestFile, total: responses.reduce((sum, response) => sum + Number(response.total || 0), 0) });
+        }
+        state.provinceUpdates = result;
+        state.provinceUpdatesLoaded = true;
+        writeSessionCache('mycenter_province_cache', result);
+        classifyProvinceUpdates();
+        renderProvinceUpdateTable();
+        progress.textContent = '';
+      } catch (error) {
+        progress.textContent = 'โหลดสถานะจังหวัดไม่สำเร็จ: ' + error.message;
+      } finally {
+        state.provinceUpdatesLoading = false;
+      }
+    }
+
+    function classifyProvinceUpdates() {
+      const latest = state.provinceUpdates.map(x => parseImportDate(x.latestImport)).filter(Boolean).sort((a, b) => b - a)[0] || null;
+      state.provinceUpdates.forEach(item => {
+        const date = parseImportDate(item.latestImport);
+        item.daysBehind = latest && date ? Math.max(0, Math.floor((latest - date) / 86400000)) : null;
+        item.status = !date ? 'none' : item.daysBehind === 0 ? 'good' : item.daysBehind <= 3 ? 'warn' : 'late';
+      });
+      document.getElementById('provinceUpdateReference').textContent = latest
+        ? 'เทียบกับการอัปเดตล่าสุดในระบบ: ' + formatThaiDate(latest)
+        : 'ยังไม่พบเวลานำเข้าข้อมูล';
+      ['good', 'warn', 'late', 'none'].forEach(key => {
+        const el = document.getElementById('province' + key.charAt(0).toUpperCase() + key.slice(1) + 'Count');
+        if (el) el.textContent = fmt(state.provinceUpdates.filter(x => x.status === key).length);
+      });
+    }
+
+    function renderProvinceUpdateTable() {
+      const q = String(document.getElementById('provinceUpdateSearch').value || '').trim().toLowerCase();
+      const order = { late: 0, none: 1, warn: 2, good: 3 };
+      const rows = state.provinceUpdates.filter(x => !q || (x.province + ' ' + x.latestFile).toLowerCase().includes(q))
+        .sort((a, b) => order[a.status] - order[b.status] || (b.daysBehind || 0) - (a.daysBehind || 0) || a.province.localeCompare(b.province));
+      const labels = { good: 'อัปเดตล่าสุด', warn: 'ควรตรวจสอบ', late: 'ยังไม่อัปเดต', none: 'ไม่พบข้อมูล' };
+      const table = document.getElementById('provinceUpdateTable');
+      table.innerHTML = '<thead><tr><th>จังหวัด</th><th>สถานะ</th><th>อัปเดตล่าสุด</th><th>ช้ากว่า</th><th>ข้อมูลถึงวันที่</th><th>ไฟล์ล่าสุด</th><th>รายการ</th></tr></thead><tbody>' +
+        rows.map(x => '<tr><td><b>' + escapeHtml(x.province) + '</b></td><td><span class="update-status ' + x.status + '">' + labels[x.status] + '</span></td><td>' + escapeHtml(x.latestImport || '-') + '</td><td>' + (x.daysBehind == null ? '-' : fmt(x.daysBehind) + ' วัน') + '</td><td>' + escapeHtml(x.latestAppointment || '-') + '</td><td>' + escapeHtml(x.latestFile || '-') + '</td><td>' + fmt(x.total) + '</td></tr>').join('') + '</tbody>';
+    }
+
+    function parseImportDate(value) {
+      const text = String(value || '').trim();
+      if (!text) return null;
+      const date = new Date(text.replace(' ', 'T'));
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    function canonicalProvinceName(value) {
+      const key = String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
+      const names = {
+        'CHON BURI': 'ชลบุรี', 'ชลบุรี': 'ชลบุรี',
+        'RAYONG': 'ระยอง', 'ระยอง': 'ระยอง',
+        'CHANTHABURI': 'จันทบุรี', 'จันทบุรี': 'จันทบุรี',
+        'TRAT': 'ตราด', 'ตราด': 'ตราด',
+        'CHACHOENGSAO': 'ฉะเชิงเทรา', 'ฉะเชิงเทรา': 'ฉะเชิงเทรา',
+        'PRACHIN BURI': 'ปราจีนบุรี', 'ปราจีนบุรี': 'ปราจีนบุรี',
+        'SA KAEO': 'สระแก้ว', 'สระแก้ว': 'สระแก้ว',
+        'NAKHON NAYOK': 'นครนายก', 'นครนายก': 'นครนายก'
+      };
+      return names[key] || String(value || '').trim();
+    }
+
+    function calendarProvinceRows(item) {
+      const totals = { 'ชลบุรี': 0, 'จันทบุรี': 0, 'ตราด': 0 };
+      ((item && item.provinces) || []).forEach(row => {
+        const name = canonicalProvinceName(row.name);
+        if (Object.prototype.hasOwnProperty.call(totals, name)) totals[name] += Number(row.count || 0);
+      });
+      return [
+        { label: 'ชลบุรี', count: totals['ชลบุรี'] },
+        { label: 'จันทบุรี', count: totals['จันทบุรี'] },
+        { label: 'ตราด', count: totals['ตราด'] }
+      ];
+    }
+
+    function formatThaiDate(date) {
+      return date.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
     }
 
     function setStatus(text) {
@@ -913,148 +1142,40 @@ chartsReady: false
     }
 
     function loadData() {
-      setStatus('กำลังโหลดข้อมูล...');
+      const cachedData = readSessionCache('mycenter_dashboard_cache', 30 * 60 * 1000);
+      if (cachedData) {
+        applyBootstrapData(cachedData);
+        setStatus('แสดงข้อมูลล่าสุดทันที • กำลังตรวจสอบข้อมูลใหม่เบื้องหลัง...');
+      } else {
+        setStatus('กำลังโหลดข้อมูล...');
+      }
       if (!hasAppsScript()) {
         const data = mockData();
-        state.dashboard = data.dashboard;
-        state.columns = data.columns;
-        state.history = data.history;
-        state.allRows = (data.dashboard || {}).sampleRows || [];
-        state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
-        if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
-        state.currentMonth = inferMonth();
-        afterDataLoaded();
+        applyBootstrapData(data);
         setStatus('โหมดตัวอย่าง: เมื่อนำไปวางใน Apps Script จะใช้ข้อมูลจาก Google Sheet จริง');
         return;
       }
-      google.script.run
-        .withSuccessHandler(data => {
-          state.dashboard = data.dashboard;
-          state.columns = data.columns || [];
-          state.history = data.history || [];
-          state.allRows = (data.dashboard || {}).sampleRows || [];
-          state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
-          if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
-          state.currentMonth = inferMonth();
-          afterDataLoaded();
-          setStatus('');
-        })
-        .withFailureHandler(showError)
-        .getBootstrapData();
-    }
-
-    function afterDataLoaded() {
-      state.currentMonth = inferMonth();
-      syncGlobalFilterControls();
-      renderGlobalTeamOptions();
-      renderColumnFilters();
-      drawDashboard();
-      renderCalendar();
-      renderHandlers();
-      renderHistory();
-      renderSearchPreview();
-      updateGlobalFilterNote();
-    }
-
-    function syncGlobalFilterControls() {
-      const input = document.getElementById('globalMonth');
-      if (!input.value) {
-        const m = state.currentMonth || inferMonth();
-        input.value = m.getFullYear() + '-' + pad(m.getMonth() + 1);
-      }
-    }
-
-    function renderGlobalTeamOptions() {
-      const select = document.getElementById('globalTeam');
-      const current = select.value;
-      const teams = [...new Set(state.allTeams.filter(Boolean))].sort();
-      const html = '<option value="">ทุกทีม</option>' + teams.map(t => '<option value="' + escapeHtml(t) + '">' + escapeHtml(t) + '</option>').join('');
-      if (select.innerHTML !== html) {
-        select.innerHTML = html;
-        if (teams.includes(current)) select.value = current;
-      }
-    }
-
-    function getGlobalFilters() {
-      const month = document.getElementById('globalMonth').value;
-      const team = document.getElementById('globalTeam').value;
-      const filters = { query: '', fromDate: '', toDate: '', columnFilters: {} };
-      if (month) {
-        const parts = month.split('-').map(Number);
-        const start = new Date(parts[0], parts[1] - 1, 1);
-        const end = new Date(parts[0], parts[1], 0);
-        filters.fromDate = start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate());
-        filters.toDate = end.getFullYear() + '-' + pad(end.getMonth() + 1) + '-' + pad(end.getDate());
-      }
-      if (team) filters.columnFilters.Team = team;
-      return filters;
-    }
-
-    function updateGlobalFilterNote() {
-      const month = document.getElementById('globalMonth').value || '-';
-      const team = document.getElementById('globalTeam').value || 'ทุกทีม';
-      document.getElementById('globalFilterNote').textContent = 'กำลังดูเดือน ' + month + ' / ทีม ' + team;
-    }
-
-    function selectedMonthDate() {
-      const month = document.getElementById('globalMonth').value;
-      if (month) {
-        const parts = month.split('-').map(Number);
-        return new Date(parts[0], parts[1] - 1, 1);
-      }
-      return inferMonth();
-    }
-
-    function applyGlobalFilters(showStatus) {
-      if (state.applyingFilters) return;
-      state.applyingFilters = true;
-      const filters = getGlobalFilters();
-      updateGlobalFilterNote();
-
-      /* instant: show local data immediately */
-      const localRows = filterRowsLocally(state.allRows || [], filters);
-      if (localRows.length > 0 || !hasAppsScript()) {
-        state.dashboard = summarizeMock(localRows);
-        state.currentMonth = selectedMonthDate();
-        drawDashboard(); renderCalendar(); renderHandlers(); renderSearchPreview();
-        const lt = [...new Set(localRows.map(r => r["Team"]).filter(Boolean))].sort();
-        if (lt.length && !filters.columnFilters.Team) { state.allTeams = lt; renderGlobalTeamOptions(); }
-      }
-
-      /* check client cache */
-      const ck = filterCacheKey(filters);
-      const cached = getFilterCache(ck, 30 * 60 * 1000);
-      if (cached) {
-        state.dashboard = cached.dashboard || state.dashboard;
-        state.currentMonth = selectedMonthDate();
-        if (cached.allTeams) { state.allTeams = cached.allTeams; renderGlobalTeamOptions(); }
-        drawDashboard(); renderCalendar(); renderHandlers();
-        if (cached.rows) renderSearchResult({ rows: cached.rows, total: cached.total, columns: cached.columns });
-        setStatus("\u0e41\u0e2a\u0e14\u0e07\u0e02\u0e49\u0e21\u0e39\u0e15\u0e32\u0e25\u0e31\u0e07 (\u0e41\u0e04\u0e27)");
+      if (state.apiAvailable) {
+        google.script.run
+          .withSuccessHandler(res => {
+            state.applyingFilters = false;
+            if (res && res.rows) {
+              drawDashboard(res);
+              if (res.allRows) state.allRows = res.allRows;
+            }
+          })
+          .withFailureHandler(err => {
+            state.applyingFilters = false;
+            showApiError(String(err));
+          })
+          .searchRecords(filters);
+      } else {
+        // Local filter for instant display
+        const filtered = filterRowsLocally(state.allRows || [], filters);
+        const sample = filtered.slice(0, 400);
+        drawDashboard({ rows: filtered, dashboard: { count: filtered.length, byType: {}, byHandler: {}, byArea: {} }, allRows: filtered });
         state.applyingFilters = false;
-        return;
       }
-
-      /* background API call */
-      if (showStatus) setStatus("\u0e01\u0e33\u0e25\u0e31\u0e07\u0e01\u0e32\u0e23\u0e23\u0e49\u0e32\u0e19\u0e40\u0e14\u0e34\u0e48\u0e21\u0e44\u0e21\u0e48\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e17\u0e35\u0e48\u0e22\u0e27...");
-      google.script.run
-        .withSuccessHandler(res => {
-          state.dashboard = res.dashboard;
-          state.currentMonth = selectedMonthDate();
-          if ((res.allTeams || []).length && !filters.columnFilters.Team) {
-            state.allTeams = res.allTeams;
-            renderGlobalTeamOptions();
-          }
-          drawDashboard(); renderCalendar(); renderHandlers(); renderSearchResult(res);
-          setFilterCache(ck, { dashboard: res.dashboard, allTeams: res.allTeams, rows: (res.rows || []).slice(0, 500), total: res.total, columns: res.columns });
-          setStatus("");
-          state.applyingFilters = false;
-        })
-        .withFailureHandler(err => {
-          state.applyingFilters = false;
-          setStatus("\u0e41\u0e2a\u0e14\u0e07\u0e02\u0e49\u0e21\u0e39 \u2014 \u0e01\u0e23\u0e49\u0e2d Refresh");
-        })
-        .searchRecords(filters);
     }
 
     function filterRowsLocally(rows, filters) {
@@ -1311,6 +1432,7 @@ chartsReady: false
           if (Number(item.change) > 0) {
             html += '<div class="event change"><strong><span>Change</span><em>' + fmt(item.change) + '</em></strong><span>Install Flag Change</span></div>';
           }
+          html += '<div class="province-day-list">' + calendarProvinceRows(item).map(row => '<div class="province-day-row' + (row.count ? '' : ' zero') + '"><span>' + row.label + '</span><b>' + fmt(row.count) + '</b></div>').join('') + '</div>';
           html += '</div>';
         }
         html += '</div>';
@@ -1731,11 +1853,8 @@ chartsReady: false
 
     function renderTable(id, headers, rows, allowHtml) {
       const el = document.getElementById(id);
-      if (!el) return;
-      const MAX = 400;
-      const shown = rows.length > MAX ? rows.slice(0, MAX) : rows;
       const head = '<thead><tr>' + headers.map(h => '<th>' + escapeHtml(h) + '</th>').join('') + '</tr></thead>';
-      const body = '<tbody>' + shown.map(row => '<tr>' + row.map(v => '<td>' + (allowHtml ? (v || '') : escapeHtml(v)) + '</td>').join('') + '</tr>').join('') + (rows.length > MAX ? '<tr><td colspan="' + headers.length + '" style="text-align:center;color:#94a3b8;font-weight:700">แสดง ' + fmt(MAX) + ' จาก ' + fmt(rows.length) + ' แถว</td></tr>' : '') + '</tbody>';
+      const body = '<tbody>' + rows.map(row => '<tr>' + row.map(v => '<td>' + (allowHtml ? (v || '') : escapeHtml(v)) + '</td>').join('') + '</tr>').join('') + '</tbody>';
       el.innerHTML = head + body;
     }
 
@@ -1958,3 +2077,15 @@ chartsReady: false
   </script>
 </body>
 </html>
+    // --- Performance: debounce (created once, reused) ---
+    function _debounce(fn, ms) { let t; return function() { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
+    // --- Performance: localStorage cache ---
+    function readLocalCache(key, maxAge) {
+      try { const c = JSON.parse(localStorage.getItem(key) || 'null'); return c && Date.now() - c.at < maxAge ? c.data : null; } catch(_) { return null; }
+    }
+    function writeLocalCache(key, data) {
+      try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), data })); } catch(_) {}
+    }
+    // --- API availability flag ---
+    state.apiAvailable = false;
+
