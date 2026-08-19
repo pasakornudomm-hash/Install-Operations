@@ -329,7 +329,8 @@ function buildCalendarDays_(records) {
     d.rows.push({
       team: r['Team'], handler: r['Handler'], flag: r['Install Flag'],
       subDistrict: r['Sub-District'], district: r['District'],
-      province: r['Province'], workOrder: String(r['Service Access No.'] || r['Work Order No.'] || '').replace(/,/g, '')
+      province: r['Province'], workOrder: String(r['Service Access No.'] || r['Work Order No.'] || '').replace(/,/g, ''),
+      _raw: r
     });
   });
   Object.values(dayMap).forEach(d => {

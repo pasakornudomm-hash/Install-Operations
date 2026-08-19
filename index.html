@@ -2120,7 +2120,7 @@
         r.subDistrict,
         r.district,
         r.province,
-        r.workOrder
+        svcAccessNo(r._raw || r)
       ]));
     }
 
@@ -2175,7 +2175,7 @@
           const flag = String(r.flag || '');
           const flagClass = flag.toLowerCase() === 'installation' ? 'install' : flag.toLowerCase() === 'change' ? 'change' : '';
           html += '<tr>';
-          html += '<td>' + escapeHtml(r.workOrder || '-') + '</td>';
+          html += '<td>' + escapeHtml(svcAccessNo(r._raw || r) || '-') + '</td>';
           html += '<td>' + escapeHtml(r.handler || '-') + '</td>';
           html += '<td><span class="dp-badge ' + flagClass + '">' + escapeHtml(flag || '-') + '</span></td>';
           html += '<td>' + escapeHtml(r.team || '-') + '</td>';
