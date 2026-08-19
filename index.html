@@ -1661,10 +1661,11 @@
           renderCalendar();
           renderHandlers();
           renderSearchResult(res);
-          setStatus('');
+          hideFilterProgress();
           state.applyingFilters = false;
         })
         .withFailureHandler(err => {
+          hideFilterProgress();
           state.applyingFilters = false;
           showError(err);
         })
