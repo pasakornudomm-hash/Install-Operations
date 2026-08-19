@@ -1370,7 +1370,7 @@
         if (provLower.includes(q)) return true;
         // Also search within work orders
         return byProv[prov].some(r => {
-          const wo = String(r['Service Access No.'] || '').toLowerCase();
+          const wo = String(r['Service Access No.'] || r['Work Order No.'] || '').toLowerCase();
           const handler = String(r['Handler'] || '').toLowerCase();
           const flag = String(r['Install Flag'] || '').toLowerCase();
           const dist = String(r['District'] || '').toLowerCase();
@@ -1406,13 +1406,13 @@
           const da = String(a['Appointment Date'] || '');
           const db = String(b['Appointment Date'] || '');
           if (da !== db) return db.localeCompare(da);
-          return String(a['Service Access No.'] || '').localeCompare(String(b['Service Access No.'] || ''));
+          return String(a['Service Access No.'] || a['Work Order No.'] || '').localeCompare(String(b['Service Access No.'] || b['Work Order No.'] || ''));
         });
         provRows.forEach(r => {
           const flag = String(r['Install Flag'] || '');
           const flagClass = flag.toLowerCase() === 'installation' ? 'install' : flag.toLowerCase() === 'change' ? 'change' : 'total';
           html += '<tr>';
-          html += '<td>' + escapeHtml(String(r['Service Access No.'] || '-')) + '</td>';
+          html += '<td>' + escapeHtml(String(r['Service Access No.'] || r['Work Order No.'] || '-')) + '</td>';
           html += '<td>' + escapeHtml(String(r['Handler'] || '-')) + '</td>';
           html += '<td><span class="pw-badge ' + flagClass + '">' + escapeHtml(flag || '-') + '</span></td>';
           html += '<td>' + escapeHtml(String(r['Appointment Date'] || '-')) + '</td>';
@@ -2548,7 +2548,7 @@
             subDistrict: r['Sub-District'],
             district: r.District,
             province: r.Province,
-            workOrder: r['Service Access No.']
+            workOrder: r['Service Access No.'] || r['Work Order No.']
           })),
           areaText: groupFrom(dayRows, 'Area').slice(0, 3).map(x => x.name).join(', ') + ' / ' + provinces.length + ' จังหวัด / ' + districts.length + ' อำเภอ / ' + subDistricts.length + ' ตำบล'
         };
