@@ -1885,6 +1885,9 @@
       }
       bar.style.display = 'block';
       animateFilterProgress(0, 70, 400);
+      // Safety: auto-hide after 30s if stuck
+      if (bar._autoHide) clearTimeout(bar._autoHide);
+      bar._autoHide = setTimeout(() => hideFilterProgress(), 30000);
     }
     function animateFilterProgress(from, to, duration) {
       const fill = document.getElementById('fpFill');
