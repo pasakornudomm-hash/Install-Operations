@@ -2566,7 +2566,18 @@
     }
 
     function svcAccessNo(r) {
-      return String(r['Service Access No.'] || r['Work Order No.'] || r.workOrder || '').replace(/,/g, '');
+      // If raw record with column properties, use them directly
+      const direct = r['Service Access No.'] || r['Work Order No.'];
+      if (direct) return String(direct).replace(/,/g, '');
+      // If has workOrder field (from calendar/buildCalendarDays_), lookup from allRows
+      if (r.workOrder && state.allRows && state.allRows.length) {
+        const match = state.allRows.find(ar => {
+          const wo = String(ar['Work Order No.'] || '').replace(/,/g, '');
+          return wo === r.workOrder;
+        });
+        if (match) return String(match['Service Access No.'] || match['Work Order No.'] || '').replace(/,/g, '');
+      }
+      return String(r.workOrder || '').replace(/,/g, '');
     }
 
     function escapeHtml(value) {
