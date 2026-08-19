@@ -693,6 +693,26 @@
       display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px;
       background: #f1f5f9; color: #475569; white-space: nowrap;
     }
+    .handler-card.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .handler-card { cursor: pointer; }
+
+    /* ── Handler Detail Panel ── */
+    .handler-detail-panel {
+      margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 14px;
+      background: #fff; overflow: hidden;
+    }
+    .hd-head {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+      padding: 16px 20px; background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-bottom: 1px solid #e2e8f0;
+    }
+    .hd-title { font-weight: 700; font-size: 16px; color: #1e293b; }
+    .hd-sub { font-size: 13px; color: #475569; }
+    .hd-close { font-size: 12px; padding: 6px 12px; }
+    .hd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .hd-table th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; }
+    .hd-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+    .hd-table tbody tr:hover { background: #f8fafc; }
+    .hd-wo { font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; font-weight: 600; color: #1e40af; }
 
     /* ── Modern Global Look ── */
     :root {
@@ -985,6 +1005,7 @@
             </div>
             <div class="panel-body">
               <div id="handlerCards" class="handler-cards"></div>
+              <div id="handlerDetailPanel" class="handler-detail-panel" style="display:none"></div>
             </div>
           </div>
           <div class="panel" style="margin-top:14px">
@@ -2265,7 +2286,7 @@
       });
       const wrap = document.getElementById('handlerCards');
       wrap.innerHTML = stats.slice(0, 60).map(h => `
-        <div class="handler-card">
+        <div class="handler-card" onclick="showHandlerDetail('${escapeHtml(h.handler).replace(/'/g, "\\'")}')" role="button" tabindex="0" title="คลิกดูรายละเอียดงานทั้งหมด">
           <div class="handler-card-head">
             <div class="handler-avatar">${escapeHtml((h.handler || '?')[0])}</div>
             <div class="handler-info">
@@ -2306,6 +2327,77 @@
         select.innerHTML = html;
         if (teams.includes(current)) select.value = current;
       }
+    }
+
+    /* ── Handler Detail: คลิกดูงานทั้งหมดของแต่ละชื่อ ── */
+    function showHandlerDetail(handlerName) {
+      const panel = document.getElementById('handlerDetailPanel');
+      if (!panel) return;
+      // Toggle if same handler clicked again
+      if (panel.dataset.handler === handlerName && panel.style.display !== 'none') {
+        panel.style.display = 'none';
+        panel.dataset.handler = '';
+        document.querySelectorAll('.handler-card.active').forEach(c => c.classList.remove('active'));
+        return;
+      }
+      // Mark active card
+      document.querySelectorAll('.handler-card').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.handler-card').forEach(c => {
+        if (c.querySelector('.handler-name') && c.querySelector('.handler-name').textContent === handlerName) {
+          c.classList.add('active');
+        }
+      });
+      // Filter rows
+      const rows = (state.allRows || []).filter(r => {
+        const h = String(r['Handler'] || '').trim();
+        return h === handlerName;
+      });
+      if (!rows.length) {
+        panel.innerHTML = '<div class="hd-head"><div class="hd-title">ไม่พบข้อมูลงานของ ' + escapeHtml(handlerName) + '</div></div>';
+        panel.style.display = 'block';
+        panel.dataset.handler = handlerName;
+        return;
+      }
+      // Sort by date desc
+      rows.sort((a, b) => {
+        const da = String(a['Appointment Date'] || '');
+        const db = String(b['Appointment Date'] || '');
+        if (da !== db) return db.localeCompare(da);
+        return svcAccessNo(a).localeCompare(svcAccessNo(b));
+      });
+      // Stats
+      const installCount = rows.filter(r => String(r['Install Flag'] || '').toLowerCase() === 'installation').length;
+      const changeCount = rows.filter(r => String(r['Install Flag'] || '').toLowerCase() === 'change').length;
+      const provinces = [...new Set(rows.map(r => r['Province']).filter(Boolean))];
+      const teams = [...new Set(rows.map(r => r['Team']).filter(Boolean))];
+
+      let html = '<div class="hd-head">';
+      html += '<div class="hd-title">📋 งานทั้งหมดของ ' + escapeHtml(handlerName) + '</div>';
+      html += '<div class="hd-sub">' + fmt(rows.length) + ' งาน | ' + fmt(installCount) + ' Installation | ' + fmt(changeCount) + ' Change | ' + provinces.length + ' จังหวัด</div>';
+      html += '<button class="secondary hd-close" onclick="document.getElementById(\'handlerDetailPanel\').style.display=\'none\'">✕ ปิด</button>';
+      html += '</div>';
+      // Table
+      html += '<div class="table-wrap"><table class="hd-table"><thead><tr>';
+      html += '<th>Service Access No.</th><th>ประเภทงาน</th><th>วันที่นัดหมาย</th><th>ทีม</th><th>จังหวัด</th><th>อำเภอ</th><th>ตำบล</th>';
+      html += '</tr></thead><tbody>';
+      rows.forEach(r => {
+        const flag = String(r['Install Flag'] || '');
+        const flagClass = flag.toLowerCase() === 'installation' ? 'install' : flag.toLowerCase() === 'change' ? 'change' : '';
+        html += '<tr>';
+        html += '<td class="hd-wo">' + escapeHtml(svcAccessNo(r) || '-') + '</td>';
+        html += '<td><span class="dp-badge ' + flagClass + '">' + escapeHtml(flag || '-') + '</span></td>';
+        html += '<td>' + escapeHtml(String(r['Appointment Date'] || '-')) + '</td>';
+        html += '<td>' + escapeHtml(String(r['Team'] || '-')) + '</td>';
+        html += '<td>' + escapeHtml(String(r['Province'] || '-')) + '</td>';
+        html += '<td>' + escapeHtml(String(r['District'] || '-')) + '</td>';
+        html += '<td>' + escapeHtml(String(r['Sub-District'] || '-')) + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      panel.innerHTML = html;
+      panel.style.display = 'block';
+      panel.dataset.handler = handlerName;
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function renderHandlerTeamTable(stats, teamFilter) {
