@@ -1,8 +1,8 @@
 const { generateToken } = require('./session.js');
 
 // Credentials from env vars (set in Vercel dashboard)
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || '123456';
+const ADMIN_USER = process.env.ADMIN_USER || 'MYCENTER';
+const ADMIN_PASS = process.env.ADMIN_PASS || '9999';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
