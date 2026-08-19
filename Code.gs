@@ -329,7 +329,7 @@ function buildCalendarDays_(records) {
     d.rows.push({
       team: r['Team'], handler: r['Handler'], flag: r['Install Flag'],
       subDistrict: r['Sub-District'], district: r['District'],
-      province: r['Province'], workOrder: r['Service Access No.'] || r['Work Order No.'] || ''
+      province: r['Province'], workOrder: String(r['Service Access No.'] || r['Work Order No.'] || '').replace(/,/g, '')
     });
   });
   Object.values(dayMap).forEach(d => {
@@ -518,7 +518,15 @@ function pad_(n) { return String(n).padStart(2, '0'); }
 
 function rowToObject_(headers, row) {
   const obj = {};
-  headers.forEach((h, i) => { if (h) obj[h] = row[i]; });
+  headers.forEach((h, i) => {
+    if (!h) return;
+    let val = row[i];
+    // Strip commas from Service Access No. / Work Order No.
+    if (h === 'Service Access No.' || h === 'Work Order No.') {
+      val = String(val || '').replace(/,/g, '');
+    }
+    obj[h] = val;
+  });
   return obj;
 }
 
