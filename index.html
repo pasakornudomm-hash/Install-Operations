@@ -1296,7 +1296,9 @@
           const responses = [];
           for (const sourceName of provinceGroups[province]) {
             try {
-              responses.push(await callServer('searchRecords', [{ query: '', fromDate: '', toDate: '', columnFilters: { Province: sourceName } }]));
+              const _gf = getGlobalFilters();
+              _gf.columnFilters.Province = sourceName;
+              responses.push(await callServer('searchRecords', [_gf]));
             } catch (_) {
               responses.push({ rows: [], total: 0 });
             }
@@ -1638,6 +1640,7 @@
 
       if (!hasAppsScript()) {
         const rows = filterRowsLocally(state.allRows || [], filters);
+        state.allRows = rows;
         state.dashboard = summarizeMock(rows);
         state.currentMonth = selectedMonthDate();
         drawDashboard();
@@ -1652,6 +1655,7 @@
       google.script.run
         .withSuccessHandler(res => {
           state.dashboard = res.dashboard;
+          state.allRows = res.rows || [];
           state.currentMonth = selectedMonthDate();
           if ((res.allTeams || []).length && !filters.columnFilters.Team) {
             state.allTeams = res.allTeams;
@@ -2365,7 +2369,9 @@
       // If not found locally, fetch from API
       if (!rows.length && hasAppsScript()) {
         try {
-          const res = await callServer('searchRecords', [{ query: '', fromDate: '', toDate: '', columnFilters: { Handler: handlerName } }]);
+          const _hf = getGlobalFilters();
+          _hf.columnFilters.Handler = handlerName;
+          const res = await callServer('searchRecords', [_hf]);
           rows = (res.rows || []).map(r => ({
             'Service Access No.': r['Service Access No.'] || r['Work Order No.'] || '',
             'Install Flag': r['Install Flag'] || '',
