@@ -619,6 +619,21 @@
     .pw-kpi-box .kpi-value { font-size: 28px; font-weight: 700; color: #1e293b; }
     .pw-kpi-box .kpi-label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
     .pw-summary { font-size: 13px; color: #475569; margin-bottom: 10px; }
+
+    /* ── Day Province Expandable ── */
+    .dp-row { cursor: pointer; }
+    .dp-row:hover { background: #f8fafc; }
+    .dp-expand { font-size: 11px; color: #64748b; transition: transform 0.2s; display: inline-block; }
+    .dp-expand.open { transform: rotate(90deg); }
+    .dp-detail-row { display: none; }
+    .dp-detail-row.open { display: table-row; }
+    .dp-detail-row td { padding: 0 8px 8px 8px; background: #f8fafc; }
+    .dp-detail-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .dp-detail-table th { background: #e2e8f0; padding: 5px 8px; text-align: left; font-size: 11px; white-space: nowrap; }
+    .dp-detail-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+    .dp-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+    .dp-badge.install { background: #dbeafe; color: #1e40af; }
+    .dp-badge.change { background: #fef3c7; color: #92400e; }
   </style>
 
 <script>
@@ -1846,7 +1861,7 @@
       renderTable('daySubDistrictTable', ['ตำบล', 'Installation', 'Change', 'รวม'], breakdownRows_(subDistricts));
       renderTable('dayDistrictTable', ['อำเภอ', 'Installation', 'Change', 'รวม'], breakdownRows_(districts));
       renderTable('dayTeamTable', ['ทีมช่าง', 'Installation', 'Change', 'รวม'], breakdownRows_(teams));
-      renderTable('dayProvinceTable', ['จังหวัด', 'Installation', 'Change', 'รวม'], breakdownRows_(provinces));
+      renderProvinceDetailTable('dayProvinceTable', provinces, filteredRows);
       renderTable('dayHandlerTable', ['Handler', 'Installation', 'Change', 'รวม'], breakdownRows_(handlers));
       renderTable('dayWorkTable', ['ทีมช่าง', 'Handler', 'ประเภท', 'ตำบล', 'อำเภอ', 'จังหวัด', 'WO'], filteredRows.map(r => [
         r.team,
@@ -1885,6 +1900,56 @@
 
     function breakdownRows_(rows) {
       return (rows || []).map(x => [x.name, x.installation || 0, x.change || 0, x.count || x.total || 0]);
+    }
+
+    function renderProvinceDetailTable(tableId, provinces, allRows) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      let html = '<thead><tr><th style="width:32px"></th><th>จังหวัด</th><th>Installation</th><th>Change</th><th>รวม</th></tr></thead><tbody>';
+      (provinces || []).forEach(p => {
+        const provRows = allRows.filter(r => {
+          const prov = canonicalProvinceName(r.province || '');
+          return prov === p.name;
+        });
+        html += '<tr class="dp-row" data-dp="' + escapeHtml(p.name) + '" onclick="toggleDpDetail(this)">';
+        html += '<td><span class="dp-expand">▶</span></td>';
+        html += '<td><b>' + escapeHtml(p.name) + '</b></td>';
+        html += '<td>' + fmt(p.installation) + '</td>';
+        html += '<td>' + fmt(p.change) + '</td>';
+        html += '<td><b>' + fmt(p.count) + '</b></td>';
+        html += '</tr>';
+        // Expandable detail row
+        html += '<tr class="dp-detail-row" data-dp-detail="' + escapeHtml(p.name) + '"><td colspan="5">';
+        html += '<table class="dp-detail-table"><thead><tr><th>WO</th><th>Handler</th><th>ประเภท</th><th>ทีม</th><th>ตำบล</th><th>อำเภอ</th></tr></thead><tbody>';
+        provRows.forEach(r => {
+          const flag = String(r.flag || '');
+          const flagClass = flag.toLowerCase() === 'installation' ? 'install' : flag.toLowerCase() === 'change' ? 'change' : '';
+          html += '<tr>';
+          html += '<td>' + escapeHtml(r.workOrder || '-') + '</td>';
+          html += '<td>' + escapeHtml(r.handler || '-') + '</td>';
+          html += '<td><span class="dp-badge ' + flagClass + '">' + escapeHtml(flag || '-') + '</span></td>';
+          html += '<td>' + escapeHtml(r.team || '-') + '</td>';
+          html += '<td>' + escapeHtml(r.subDistrict || '-') + '</td>';
+          html += '<td>' + escapeHtml(r.district || '-') + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></td></tr>';
+      });
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function toggleDpDetail(row) {
+      const expand = row.querySelector('.dp-expand');
+      const detail = row.nextElementSibling;
+      if (!detail || !detail.classList.contains('dp-detail-row')) return;
+      const isOpen = detail.classList.contains('open');
+      document.querySelectorAll('.dp-detail-row.open').forEach(el => el.classList.remove('open'));
+      document.querySelectorAll('.dp-expand.open').forEach(el => el.classList.remove('open'));
+      if (!isOpen) {
+        detail.classList.add('open');
+        if (expand) expand.classList.add('open');
+      }
     }
 
     function formatTopRows_(rows, limit) {
