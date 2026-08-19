@@ -634,6 +634,50 @@
     .dp-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600; }
     .dp-badge.install { background: #dbeafe; color: #1e40af; }
     .dp-badge.change { background: #fef3c7; color: #92400e; }
+
+    /* ── Loading Screen ── */
+    .loading-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loading-card {
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+      padding: 48px 56px; text-align: center; min-width: 400px; max-width: 480px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    }
+    .loading-icon { position: relative; width: 100px; height: 100px; margin: 0 auto 24px; }
+    .loading-spinner {
+      position: absolute; inset: 0; border: 4px solid rgba(255,255,255,0.1);
+      border-top: 4px solid #60a5fa; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loading-emoji {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 40px; animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    .loading-card h2 { color: #f1f5f9; font-size: 22px; margin: 0 0 20px; font-weight: 600; }
+    .loading-progress-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .loading-progress-bar {
+      flex: 1; height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;
+    }
+    .loading-progress-fill {
+      height: 100%; width: 0%; border-radius: 10px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd);
+      transition: width 0.5s ease;
+      box-shadow: 0 0 12px rgba(59,130,246,0.5);
+    }
+    .loading-percent { color: #93c5fd; font-size: 18px; font-weight: 700; min-width: 48px; }
+    .loading-status { color: #94a3b8; font-size: 14px; margin: 0 0 12px; min-height: 20px; }
+    .loading-tip {
+      color: #64748b; font-size: 12px; margin: 0; font-style: italic; min-height: 18px;
+      transition: opacity 0.3s;
+    }
   </style>
 
 <script>
@@ -705,6 +749,25 @@
     });
   }());
   </script>
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-card">
+      <div class="loading-icon">
+        <div class="loading-spinner"></div>
+        <div class="loading-emoji" id="loadingEmoji">📊</div>
+      </div>
+      <h2 id="loadingTitle">กำลังเตรียมข้อมูล...</h2>
+      <div class="loading-progress-wrap">
+        <div class="loading-progress-bar">
+          <div class="loading-progress-fill" id="loadingFill"></div>
+        </div>
+        <div class="loading-percent" id="loadingPercent">0%</div>
+      </div>
+      <p class="loading-status" id="loadingStatus">เชื่อมต่อระบบ...</p>
+      <p class="loading-tip" id="loadingTip"></p>
+    </div>
+  </div>
 
   <div class="app">
     <aside>
@@ -1058,6 +1121,63 @@
       document.getElementById('status').textContent = text || '';
     }
 
+    /* ── Loading Screen ── */
+    const loadingTips = [
+      '💡 ข้อมูลจะถูก cache ไว้ 30 นาที เพื่อให้โหลดเร็วขึ้นในครั้งถัดไป',
+      '💡 สามารถลากวางไฟล์ Excel/CSV เพื่อเพิ่มข้อมูลได้ตลอดเวลา',
+      '💡 ใช้ตัวกรองเดือนและทีมเพื่อดูข้อมูลเฉพาะที่ต้องการ',
+      '💡 คลิกวันที่ในปฏิทินเพื่อดูรายละเอียด Work Order แต่ละวัน',
+      '💡 ข้อมูลจะถูกตัด Termination อัตโนมัติ',
+      '💡 ใช้เมนู "ชื่องานตามจังหวัด" เพื่อดูว่าจังหวัดไหนยังไม่ได้อัปเดท',
+      '💡 ข้อมูลจะถูก sync จาก Google Sheet อัตโนมัติ',
+      '💡 สามารถค้นหาข้อมูลได้ทุกคอลัมน์ในเมนูค้นหาไฟล์'
+    ];
+    let _loadingInterval = null;
+    let _loadingTipIdx = 0;
+
+    function showLoadingScreen() {
+      const el = document.getElementById('loadingScreen');
+      if (!el) return;
+      el.classList.remove('hidden');
+      setLoadingProgress(0, 'เตรียมข้อมูล...', '📊');
+      // Rotate tips
+      _loadingTipIdx = 0;
+      document.getElementById('loadingTip').textContent = loadingTips[0];
+      _loadingInterval = setInterval(() => {
+        _loadingTipIdx = (_loadingTipIdx + 1) % loadingTips.length;
+        document.getElementById('loadingTip').textContent = loadingTips[_loadingTipIdx];
+      }, 4000);
+    }
+
+    function setLoadingProgress(percent, status, emoji) {
+      const fill = document.getElementById('loadingFill');
+      const pct = document.getElementById('loadingPercent');
+      const st = document.getElementById('loadingStatus');
+      const em = document.getElementById('loadingEmoji');
+      const title = document.getElementById('loadingTitle');
+      if (fill) fill.style.width = Math.min(100, Math.max(0, percent)) + '%';
+      if (pct) pct.textContent = Math.round(percent) + '%';
+      if (st) st.textContent = status || '';
+      if (em && emoji) em.textContent = emoji;
+      if (title) {
+        if (percent >= 100) title.textContent = '✅ พร้อมใช้งาน!';
+        else if (percent >= 80) title.textContent = '🎨 กำลังจัดรูปแบบ...';
+        else if (percent >= 60) title.textContent = '📈 กำลังสร้างกราฟ...';
+        else if (percent >= 40) title.textContent = '🔍 กำลังวิเคราะห์ข้อมูล...';
+        else if (percent >= 20) title.textContent = '📡 กำลังเชื่อมต่อข้อมูล...';
+        else title.textContent = 'กำลังเตรียมข้อมูล...';
+      }
+    }
+
+    function hideLoadingScreen() {
+      if (_loadingInterval) { clearInterval(_loadingInterval); _loadingInterval = null; }
+      setLoadingProgress(100, 'พร้อมใช้งานแล้ว!', '🎉');
+      setTimeout(() => {
+        const el = document.getElementById('loadingScreen');
+        if (el) el.classList.add('hidden');
+      }, 800);
+    }
+
     // --- Performance: debounce (created once, reused) ---
     function _debounce(fn, ms) { let t; return function() { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
     // --- Performance: localStorage cache ---
@@ -1319,6 +1439,7 @@
     function loadData() {
       const cached = readLocalCache('mycenter_data', 30 * 60 * 1000);
       if (cached) {
+        setLoadingProgress(30, 'พบข้อมูล cache — กำลังโหลด...', '💾');
         state.dashboard = cached.dashboard;
         state.columns = cached.columns || [];
         state.history = cached.history || [];
@@ -1326,13 +1447,18 @@
         state.allTeams = cached.allTeams || ((cached.dashboard || {}).byTeam || []).map(t => t.team);
         if (cached.defaultMonth) document.getElementById('globalMonth').value = cached.defaultMonth;
         state.currentMonth = inferMonth();
+        setLoadingProgress(60, 'กำลังสร้างแดชบอร์ด...', '📈');
         afterDataLoaded();
+        setLoadingProgress(85, 'กำลังจัดรูปแบบกราฟ...', '🎨');
+        setTimeout(() => { setLoadingProgress(95, 'ตรวจสอบข้อมูลใหม่เบื้องหลัง...', '🔍'); }, 300);
+        setTimeout(() => hideLoadingScreen(), 600);
         setStatus('แสดงข้อมูลล่าสุดทันที • กำลังตรวจสอบข้อมูลใหม่เบื้องหลัง...');
-      } else {
-        setStatus('กำลังโหลดข้อมูล...');
+        return;
       }
       if (!hasAppsScript()) {
+        setLoadingProgress(20, 'กำลังโหลดข้อมูลตัวอย่าง...', '📋');
         const data = mockData();
+        setLoadingProgress(50, 'กำลังวิเคราะห์ข้อมูล...', '🔍');
         state.dashboard = data.dashboard;
         state.columns = data.columns;
         state.history = data.history;
@@ -1340,12 +1466,17 @@
         state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
         if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
         state.currentMonth = inferMonth();
+        setLoadingProgress(75, 'กำลังสร้างแดชบอร์ด...', '📈');
         afterDataLoaded();
+        setLoadingProgress(100, 'พร้อมใช้งาน!', '🎉');
+        setTimeout(hideLoadingScreen, 500);
         setStatus('โหมดตัวอย่าง: เมื่อนำไปวางใน Apps Script จะใช้ข้อมูลจาก Google Sheet จริง');
         return;
       }
+      setLoadingProgress(10, '📡 เชื่อมต่อ Google Sheet...', '📡');
       google.script.run
         .withSuccessHandler(data => {
+          setLoadingProgress(40, '📥 รับข้อมูลสำเร็จ — กำลังวิเคราะห์...', '🔍');
           state.dashboard = data.dashboard;
           state.columns = data.columns || [];
           state.history = data.history || [];
@@ -1353,11 +1484,22 @@
           state.allTeams = data.allTeams || ((data.dashboard || {}).byTeam || []).map(t => t.team);
           if (data.defaultMonth) document.getElementById('globalMonth').value = data.defaultMonth;
           state.currentMonth = inferMonth();
+          setLoadingProgress(65, '📊 กำลังสร้างแดชบอร์ด...', '📊');
           afterDataLoaded();
+          setLoadingProgress(85, '🎨 กำลังจัดรูปแบบกราฟ...', '🎨');
           writeLocalCache('mycenter_data', data);
+          setLoadingProgress(95, '💾 บันทึกข้อมูลลง cache...', '💾');
+          setTimeout(() => {
+            setLoadingProgress(100, '✅ พร้อมใช้งาน!', '🎉');
+            setTimeout(hideLoadingScreen, 600);
+          }, 300);
           setStatus('');
         })
-        .withFailureHandler(showError)
+        .withFailureHandler(err => {
+          setLoadingProgress(100, 'เกิดข้อผิดพลาด', '❌');
+          setTimeout(hideLoadingScreen, 500);
+          showError(err);
+        })
         .getBootstrapData();
     }
 
@@ -2408,6 +2550,7 @@
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     }
 
+    showLoadingScreen();
     loadData();
   </script>
 </body>
